@@ -235,43 +235,38 @@
     ###########################################################################
     # --- DOTFILES ---
     ###########################################################################
-    - name: Clone dotfiles repository
-      become: no
-      git:
-        repo: "{{ dotfiles_repo }}"
-        dest: "~/.dotfiles"
-        update: yes
+    # - name: Clone dotfiles repository
+    #   become: no
+    #   git:
+    #     repo: "{{ dotfiles_repo }}"
+    #     dest: "~/.dotfiles"
+    #     update: yes
 
-    - name: Symlink dotfiles (Example for .zshrc)
+    - name: Symlink configuration directories to ~/.config from dotfiles
       become: no
       file:
-        src: "~/.dotfiles/.zshrc"
-        dest: "~/.zshrc"
+        src: "~/github.com/jdvober/dotfiles/.config/{{ item }}"
+        dest: "~/.config/{{ item }}"
         state: link
         force: yes
-
-    # --- TEMPLATED DOTFILES ---
-    - name: Ensure config directories exist
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
       loop:
-        - "{{ ansible_user_dir }}/.config"
-        - "{{ ansible_user_dir }}/.local/bin"
+        - beets
+        - eza
+        - fish
+        - neofetch
+        - nvim
+        - vim
+        - wezterm
+        - yazi
+        - zsh
 
-    - name: Deploy templated zshrc
-      template:
-        src: "~/.dotfiles/templates/zshrc.j2"
-        dest: "{{ ansible_user_dir }}/.zshrc"
-        mode: '0644'
+    - name: Copy fonts
+      become: yes 
+      copy:
+        src: "~/github.com/jdvober/dotfiles/fonts/"
+        dest: "/usr/local/share/fonts/"
+        mode: '0755'
         force: yes
-
-    - name: Deploy templated Git config
-      template:
-        src: "~/.dotfiles/templates/gitconfig.j2"
-        dest: "{{ ansible_user_dir }}/.gitconfig"
-        mode: '0644'
 
     ###########################################################################
     # --- SYSTEM UPDATES ---
@@ -349,6 +344,3 @@
     # --- Handlers --- MUST COME LAST
     ###########################################################################
     ###########################################################################
-    - name: Update Pacman Cache
-      command: pacman -Sy
-      become: yes
