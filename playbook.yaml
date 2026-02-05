@@ -107,6 +107,7 @@
       - vlc
       - w3m
       - watchexec
+      - wezterm
       - wget
       - wireplumber
       - xarchiver
@@ -130,10 +131,27 @@
       - github-desktop-bin
       - neovim-nightly-bin
       - tidal-hifi-bin
-      - wezterm-git
+    flatpaks:
+      - com.discordapp.Discord
+      - com.github.tchx84.Flatseal
 
   tasks:
+    - name: Enable Multilib repository
+      replace:
+        path: /etc/pacman.conf
+        regexp: '^#\[multilib\]\n#Include'
+        replace: "[multilib]\nInclude"
+      become: yes
+      register: pacman_config
+
+    - name: Update pacman cache if config changed
+      command: pacman -Sy
+      when: pacman_config.changed
+      become: yes
+
+    ###########################################################################
     # --- AUR SUPPORT SETUP ---
+    ###########################################################################
     - name: Create AUR build user
       user:
         name: aur_builder
@@ -156,7 +174,9 @@
       become_user: aur_builder
       loop: "{{ aur_packages }}"
 
+    ###########################################################################
     # --- BTRFS & REFIND SNAPSHOTS ---
+    ###########################################################################
     - name: Install Snapper, Snap-Pac, and rEFInd-Btrfs
       pacman:
         name: 
@@ -212,74 +232,123 @@
         - snapper-cleanup.timer
         - snapper-timeline.timer
 
+    ###########################################################################
     # --- DOTFILES ---
-#    - name: Clone dotfiles repository
-#      become: no
-#      git:
-#        repo: "{{ dotfiles_repo }}"
-#        dest: "~/.dotfiles"
-#        update: yes
-#
-#    - name: Symlink dotfiles (Example for .zshrc)
-#      become: no
-#      file:
-#        src: "~/.dotfiles/.zshrc"
-#        dest: "~/.zshrc"
-#        state: link
-#        force: yes
-#
-## --- TEMPLATED DOTFILES ---
-#    - name: Ensure config directories exist
-#      file:
-#        path: "{{ item }}"
-#        state: directory
-#        mode: '0755'
-#      loop:
-#        - "{{ ansible_user_dir }}/.config"
-#        - "{{ ansible_user_dir }}/.local/bin"
-#
-#    - name: Deploy templated zshrc
-#      template:
-#        src: "~/.dotfiles/templates/zshrc.j2"
-#        dest: "{{ ansible_user_dir }}/.zshrc"
-#        mode: '0644'
-#        force: yes
-#
-#    - name: Deploy templated Git config
-#      template:
-#        src: "~/.dotfiles/templates/gitconfig.j2"
-#        dest: "{{ ansible_user_dir }}/.gitconfig"
-#        mode: '0644'
-#
-# --- SYSTEM UPDATES ---
+    ###########################################################################
+    - name: Clone dotfiles repository
+      become: no
+      git:
+        repo: "{{ dotfiles_repo }}"
+        dest: "~/.dotfiles"
+        update: yes
 
-# Task 1: Install universal packages
+    - name: Symlink dotfiles (Example for .zshrc)
+      become: no
+      file:
+        src: "~/.dotfiles/.zshrc"
+        dest: "~/.zshrc"
+        state: link
+        force: yes
+
+    # --- TEMPLATED DOTFILES ---
+    - name: Ensure config directories exist
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ ansible_user_dir }}/.config"
+        - "{{ ansible_user_dir }}/.local/bin"
+
+    - name: Deploy templated zshrc
+      template:
+        src: "~/.dotfiles/templates/zshrc.j2"
+        dest: "{{ ansible_user_dir }}/.zshrc"
+        mode: '0644'
+        force: yes
+
+    - name: Deploy templated Git config
+      template:
+        src: "~/.dotfiles/templates/gitconfig.j2"
+        dest: "{{ ansible_user_dir }}/.gitconfig"
+        mode: '0644'
+
+    ###########################################################################
+    # --- SYSTEM UPDATES ---
+    ###########################################################################
+
+    ###########################################################################
+    # Install universal packages
+    ###########################################################################
     - name: Install universal packages
       package:
         name: "{{ universal_packages }}"
         state: present
       become: yes
+      ignore_errors: true # Like nofail for fstab
 
-    # Task 2: Install Arch-only packages
+    ###########################################################################
+    # Install Arch-only packages
+    ###########################################################################
     - name: Install Arch-specific packages
       pacman:
         name: "{{ arch_packages }}"
         state: present
       become: yes
-      #when: ansible_distribution == "Archlinux"
+      ignore_errors: true # Like nofail for fstab
 
-    # Task 3: Install Debian-only packages
-    # - name: Install Debian-specific packages
-    #   apt:
-    #     name: "{{ debian_packages }}"
-    #     state: present
-    #     update_cache: yes
-    #   become: yes
-    #   #when: ansible_os_family == "Debian"
+    ###########################################################################
+    # Install Debian-only packages
+    ###########################################################################
+    - name: Install Debian-specific packages
+      apt:
+        name: "{{ debian_packages }}"
+        state: present
+        update_cache: yes
+      become: yes
+      ignore_errors: true # Like nofail for fstab
 
+    ###########################################################################
+    # --- FLATPAK SETUP ---
+    ###########################################################################
+    - name: Ensure flatpak is installed
+      pacman:
+        name: flatpak
+        state: present
+      become: yes
+
+    - name: Add Flathub repository
+      community.general.flatpak_remote:
+        name: flathub
+        state: present
+        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+      become: yes # Use 'yes' for system-wide or 'no' for user-level
+
+    - name: Install Flatpak applications
+      community.general.flatpak:
+        name: "{{ flatpaks }}"
+        state: present
+        remote: flathub
+      become: yes # Optional: Install to user space instead of system-wide
+
+    - name: Uninstall unused Flatpak runtimes
+      command: flatpak uninstall --unused -y
+      changed_when: false
+
+    ###########################################################################
+    # --- Upgrade System ---
+    ###########################################################################
     - name: Full system upgrade
       pacman:
         update_cache: yes
         upgrade: yes
       become: yes
 
+    ###########################################################################
+    ###########################################################################
+    # --- Handlers --- MUST COME LAST
+    ###########################################################################
+    ###########################################################################
+    - name: Update Pacman Cache
+      command: pacman -Sy
+      become: yes
