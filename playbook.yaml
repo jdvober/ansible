@@ -1,6 +1,7 @@
 ---
 - name: System Setup Post-Install
-  hosts: localhost
+  # specify what hosts this should run on.  See inventory.yaml for hosts
+  hosts: localMachine
   become: yes
   vars_files:
     - packages.yaml
