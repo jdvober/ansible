@@ -1,346 +1,265 @@
 ---
-- name: Arch Linux Post-Install Setup
-  hosts: localhost
-  connection: local
-  become: yes
+- name: System Setup Post-Install
+  hosts: all
   vars:
-    user_name: "{{ ansible_user_id }}"
+    # Playbook-wide variables
+    username: jdv
     dotfiles_repo: "https://github.com/jdvober/dotfiles.git"
-    # Packages that have the same name across distros (like git)
-    universal_packages:
-      - git
-    arch_packages: 
-      - alacritty
-      - alsa-plugins
-      - alsa-utils
-      - asciidoc
-      - audacity
-      - bash-language-server
-      - bat
-      - bitwarden
-      - btop
-      - calf
-      - cifs-utils
-      - cowsay
-      - discord
-      - distrobox
-      - dust
-      - easyeffects
-      - evince
-      - eza
-      - fastfetch
-      - feh
-      - firefox
-      - fish # after setting fish as the default shell from bash, you must copy /usr/etc/shells to /etc/shells as root for it to not lock you out of your user account!
-      - font-manager
-      - fprintd
-      - fuse
-      - fx
-      - fzf
-      - gcc
-      - gimp
-      - gnome-disk-utility
-      - go
-      - go-tools
-      - gopls
-      - greetd
-      - gthumb
-      - imagemagick
-      - inkscape
-      - jedi-language-server
-      - jq
-      - keychain
-      - libreoffice
-      - lolcat
-      - lsp-plugins-lv2
-      - lxappearance
-      - make
-      - mda.lv2
-      - mlocate
-      - mpv
-      - mupdf
-      - nodejs
-      - npm
-      - ntfs-3g
-      - obs-studio
-      - obsidian
-      - openssh
-      - p7zip
-      - pacman-contrib
-      - pandoc
-      - pavucontrol-qt
-      - pipewire
-      - pipewire-alsa
-      - pipewire-pulse
-      - python
-      - python-pip
-      - python-pipx
-      - python-pynvim
-      - qtile
-      - rclone
-      - rdfind
-      - reflector
-      - ripgrep
-      - rofi
-      - rsnapshot
-      - rsync
-      - rustup
-      - samba
-      - scrot
-      - shutter
-      - starship
-      - steam
-      - switcheroo-control
-      - tar
-      - thunar
-      - thunar-archive-plugin
-      - thunar-media-tags-plugin
-      - thunar-volman
-      - tmux
-      - ttf-fira-code
-      - ttf-nerd-fonts-symbols-mono
-      - typescript-language-server
-      - unrar
-      - usbutils
-      - uv
-      - vi
-      - vlc
-      - w3m
-      - watchexec
-      - wezterm
-      - wget
-      - wireplumber
-      - xarchiver
-      - xclip
-      - xf86-input-wacom
-      - xfce4-settings
-      - yaml-language-server
-      - yarn
-      - yazi
-      - zam-plugins-lv2
-      - zathura
-      - zathura-pdf-mupdf
-      - zoxide
-    aur_packages:
-      - yay-bin
-      - visual-studio-code-bin
-      - bambustudio-bin
-      - f1multiviewer-bin
-      - f1mv-lights-integration-bin
-      - feishin-bin
-      - github-desktop-bin
-      - neovim-nightly-bin
-      - tidal-hifi-bin
-    flatpaks:
-      - com.discordapp.Discord
-      - com.github.tchx84.Flatseal
-
+    dotfiles_path: /home/{{ username}}/github.com/jdvober/dotfiles/
+    global_fonts_path: /usr/local/share/fonts/ # Destination for global font usage.
   tasks:
-    - name: Enable Multilib repository
-      replace:
-        path: /etc/pacman.conf
-        regexp: '^#\[multilib\]\n#Include'
-        replace: "[multilib]\nInclude"
-      become: yes
-      register: pacman_config
-
-    - name: Update pacman cache if config changed
-      command: pacman -Sy
-      when: pacman_config.changed
-      become: yes
-
     ###########################################################################
-    # --- AUR SUPPORT SETUP ---
+    # --- Installing Packages ---
     ###########################################################################
-    - name: Create AUR build user
-      user:
-        name: aur_builder
-        group: wheel
-        create_home: yes
-
-    - name: Allow aur_builder to use pacman without password
-      lineinfile:
-        path: /etc/sudoers.d/11-install-aur-builder
-        line: 'aur_builder ALL=(ALL) NOPASSWD: /usr/bin/pacman'
-        create: yes
-        mode: '0440'
-
-    - name: Install AUR packages
-      kewlfft.aur.aur:
-        name: "{{ item }}"
-        use: makepkg
-        state: present
+    - name: Install Linux Packages
+      hosts: localhost
+      connection: local
       become: yes
-      become_user: aur_builder
-      loop: "{{ aur_packages }}"
-
-    ###########################################################################
-    # --- BTRFS & REFIND SNAPSHOTS ---
-    ###########################################################################
-    - name: Install Snapper, Snap-Pac, and rEFInd-Btrfs
-      pacman:
-        name: 
-          - snapper
-          - snap-pac
-        state: present
-
-    - name: Install refind-btrfs from AUR
-      kewlfft.aur.aur:
-        name: refind-btrfs
-        use: makepkg
-        state: present
-      become: yes
-      become_user: aur_builder
-
-    - name: Check if snapper config exists
-      stat:
-        path: /etc/snapper/configs/root
-      register: snapper_config
-
-    - name: Initialize snapper config for root
-      command: snapper -c root create-config /
-      when: not snapper_config.stat.exists
-
-    - name: Enable refind-btrfs service
-      systemd:
-        name: refind-btrfs.service
-        enabled: yes
-        state: started
-
-  # --- SNAPPER CLEANUP & RETENTION ---
-    - name: Configure Snapper retention policy for root
-      lineinfile:
-        path: /etc/snapper/configs/root
-        regexp: "^{{ item.key }}="
-        line: '{{ item.key }}="{{ item.value }}"'
-      loop:
-        - { key: 'TIMELINE_CLEANUP', value: 'yes' }
-        - { key: 'TIMELINE_LIMIT_HOURLY', value: '5' }
-        - { key: 'TIMELINE_LIMIT_DAILY', value: '7' }
-        - { key: 'TIMELINE_LIMIT_WEEKLY', value: '0' }
-        - { key: 'TIMELINE_LIMIT_MONTHLY', value: '0' }
-        - { key: 'TIMELINE_LIMIT_YEARLY', value: '0' }
-        - { key: 'NUMBER_LIMIT', value: '10' } # Limits snapshots triggered by snap-pac
-        - { key: 'NUMBER_LIMIT_IMPORTANT', value: '5' }
-
-    - name: Enable and start Snapper cleanup timers
-      systemd:
-        name: "{{ item }}"
-        enabled: yes
-        state: started
-      loop:
-        - snapper-cleanup.timer
-        - snapper-timeline.timer
-
+      vars_files:
+        - packages.yaml
+    
+      tasks:
+        - name: Enable Multilib repository
+          replace:
+            path: /etc/pacman.conf
+            regexp: '^#\[multilib\]\n#Include'
+            replace: "[multilib]\nInclude"
+          become: yes
+          register: pacman_config
+    
+        - name: Update pacman cache if config changed
+          command: pacman -Sy
+          when: pacman_config.changed
+          become: yes
+    
+        ###########################################################################
+        # --- AUR SUPPORT SETUP ---
+        ###########################################################################
+        - name: Create AUR build user
+          user:
+            name: aur_builder
+            group: wheel
+            create_home: yes
+    
+        - name: Allow aur_builder to use pacman without password
+          lineinfile:
+            path: /etc/sudoers.d/11-install-aur-builder
+            line: 'aur_builder ALL=(ALL) NOPASSWD: /usr/bin/pacman'
+            create: yes
+            mode: '0440'
+    
+        ###########################################################################
+        # --- BTRFS & REFIND SNAPSHOTS ---
+        ###########################################################################
+        - name: Install Snapper, Snap-Pac, and rEFInd-Btrfs
+          pacman:
+            name: 
+              - snapper
+              - snap-pac
+            state: present
+    
+        - name: Install refind-btrfs from AUR
+          kewlfft.aur.aur:
+            name: refind-btrfs
+            use: makepkg
+            state: present
+          become: yes
+          become_user: aur_builder
+    
+        - name: Check if snapper config exists
+          stat:
+            path: /etc/snapper/configs/root
+          register: snapper_config
+    
+        - name: Initialize snapper config for root
+          command: snapper -c root create-config /
+          when: not snapper_config.stat.exists
+    
+        - name: Enable refind-btrfs service
+          systemd:
+            name: refind-btrfs.service
+            enabled: yes
+            state: started
+    
+      # --- SNAPPER CLEANUP & RETENTION ---
+        - name: Configure Snapper retention policy for root
+          lineinfile:
+            path: /etc/snapper/configs/root
+            regexp: "^{{ item.key }}="
+            line: '{{ item.key }}="{{ item.value }}"'
+          loop:
+            - { key: 'TIMELINE_CLEANUP', value: 'yes' }
+            - { key: 'TIMELINE_LIMIT_HOURLY', value: '5' }
+            - { key: 'TIMELINE_LIMIT_DAILY', value: '7' }
+            - { key: 'TIMELINE_LIMIT_WEEKLY', value: '0' }
+            - { key: 'TIMELINE_LIMIT_MONTHLY', value: '0' }
+            - { key: 'TIMELINE_LIMIT_YEARLY', value: '0' }
+            - { key: 'NUMBER_LIMIT', value: '10' } # Limits snapshots triggered by snap-pac
+            - { key: 'NUMBER_LIMIT_IMPORTANT', value: '5' }
+    
+        - name: Enable and start Snapper cleanup timers
+          systemd:
+            name: "{{ item }}"
+            enabled: yes
+            state: started
+          loop:
+            - snapper-cleanup.timer
+            - snapper-timeline.timer
+    
+        ###########################################################################
+        # Install Cross Platform Packages
+        ###########################################################################
+        - name: Install Cross platform packages
+          package:
+            name: "{{ cross_platform_packages }}"
+            state: present
+          become: yes
+          ignore_errors: true # Like nofail for fstab
+    
+        ###########################################################################
+        # Install Arch-only packages
+        ###########################################################################
+        - name: Install Arch-specific packages with Pacman (non-AUR)
+          pacman:
+            name: "{{ pacman_packages }}"
+            state: present
+          become: yes
+          when: ansible_os_family == "Archlinux"
+          ignore_errors: true # Like nofail for fstab
+    
+    
+        ###########################################################################
+        # Install AUR packages
+        ###########################################################################
+        - name: Install AUR packages
+          kewlfft.aur.aur:
+            name: "{{ item }}"
+            use: makepkg
+            state: present
+          become: yes
+          when: ansible_os_family == "Archlinux"
+          become_user: aur_builder
+          loop: "{{ aur_packages }}"
+    
+        ###########################################################################
+        # Install Debian-only packages
+        ###########################################################################
+        - name: Install Debian-specific packages
+          ansible.builtin.package:
+            name: "{{ debian_packages }}"
+            state: present
+            update_cache: yes
+          when: ansible_os_family == "Debian"
+          become: yes
+          ignore_errors: true # Like nofail for fstab
+    
+        ###########################################################################
+        # --- FLATPAK SETUP ---
+        ###########################################################################
+        - name: Ensure flatpak is installed
+          pacman:
+            name: flatpak
+            state: present
+          become: yes
+    
+        - name: Add Flathub repository
+          community.general.flatpak_remote:
+            name: flathub
+            state: present
+            flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+          become: yes # Use 'yes' for system-wide or 'no' for user-level
+    
+        - name: Install Flatpak applications
+          community.general.flatpak:
+            name: "{{ flatpaks }}"
+            state: present
+            remote: flathub
+          become: yes # Optional: Install to user space instead of system-wide
+    
+        - name: Uninstall unused Flatpak runtimes
+          command: flatpak uninstall --unused -y
+          changed_when: false
+    
+    
     ###########################################################################
     # --- DOTFILES ---
     ###########################################################################
-    # - name: Clone dotfiles repository
-    #   become: no
-    #   git:
-    #     repo: "{{ dotfiles_repo }}"
-    #     dest: "~/.dotfiles"
-    #     update: yes
-
-    - name: Symlink configuration directories to ~/.config from dotfiles
-      become: no
-      file:
-        src: "~/github.com/jdvober/dotfiles/.config/{{ item }}"
-        dest: "~/.config/{{ item }}"
-        state: link
-        force: yes
-      loop:
-        - beets
-        - eza
-        - fish
-        - neofetch
-        - nvim
-        - vim
-        - wezterm
-        - yazi
-        - zsh
-
-    - name: Copy fonts
-      become: yes 
-      copy:
-        src: "~/github.com/jdvober/dotfiles/fonts/"
-        dest: "/usr/local/share/fonts/"
-        mode: '0755'
-        force: yes
-
-    ###########################################################################
-    # --- SYSTEM UPDATES ---
-    ###########################################################################
-
-    ###########################################################################
-    # Install universal packages
-    ###########################################################################
-    - name: Install universal packages
-      package:
-        name: "{{ universal_packages }}"
-        state: present
+    - name: Set up system configuration
+      hosts: localhost
+      connection: local
       become: yes
-      ignore_errors: true # Like nofail for fstab
+      vars:
+        required_folders:
+          - {{ global_fonts_path }}
+          - {{ dotfiles_path }}
+        dotfiles_folders:
+            - beets
+            - eza
+            - fish
+            - neofetch
+            - nvim
+            - vim
+            - wezterm
+            - yazi
+            - zsh
+      
+      tasks:
+        ###########################################################################
+        # --- Cloning Dotfiles Repo ---
+        ###########################################################################
 
-    ###########################################################################
-    # Install Arch-only packages
-    ###########################################################################
-    - name: Install Arch-specific packages
-      pacman:
-        name: "{{ arch_packages }}"
-        state: present
-      become: yes
-      ignore_errors: true # Like nofail for fstab
+        - name: Check existence of all required_folders listed above
+          ansible.builtin.stat:
+            path: "{{ item }}"
+          loop: "{{ required_folders }}"
+          register: folder_stats
+      
+        - name: Clone dotfiles repository
+          become: no
+          git:
+            repo: "{{ dotfiles_repo }}"
+            dest: {{ dotfiles_path }}
+            update: yes
+          when: 
+            - not item.stat.exists
+            - item.item == {{ dotfiles_path }}
+    
+        ###########################################################################
+        # --- Symlinking Dotfiles ---
+        ###########################################################################
+        - name: Check existence of all dotfiles_folders listed above
+          ansible.builtin.stat:
+            path: "{{ item }}"
+          loop: "{{ dotfiles_folders }}"
+          register: dotfiles_folder_stats
 
+        - name: Symlink configuration directories to ~/.config from dotfiles
+          become: no
+          file:
+            src: "{{ dotfiles_path }}/.config/{{ item }}"
+            dest: "~/.config/{{ item }}"
+            state: link
+          loop: {{ dotfiles_folders.results }}
+          when: not item.stat.exists
+    
+        ###########################################################################
+        #  Copy Fonts
+        ###########################################################################
+        - name: Copy fonts
+          become: yes 
+          copy:
+            src: "{{ dotfiles_path}}/fonts/"
+            dest: {{ global_fonts_path }}
+            mode: '0755'
+          when: 
+            - not item.stat.exists
+            - item.item == {{ global_fonts_path }}
+    
     ###########################################################################
-    # Install Debian-only packages
-    ###########################################################################
-    - name: Install Debian-specific packages
-      apt:
-        name: "{{ debian_packages }}"
-        state: present
-        update_cache: yes
-      become: yes
-      ignore_errors: true # Like nofail for fstab
-
-    ###########################################################################
-    # --- FLATPAK SETUP ---
-    ###########################################################################
-    - name: Ensure flatpak is installed
-      pacman:
-        name: flatpak
-        state: present
-      become: yes
-
-    - name: Add Flathub repository
-      community.general.flatpak_remote:
-        name: flathub
-        state: present
-        flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-      become: yes # Use 'yes' for system-wide or 'no' for user-level
-
-    - name: Install Flatpak applications
-      community.general.flatpak:
-        name: "{{ flatpaks }}"
-        state: present
-        remote: flathub
-      become: yes # Optional: Install to user space instead of system-wide
-
-    - name: Uninstall unused Flatpak runtimes
-      command: flatpak uninstall --unused -y
-      changed_when: false
-
-    ###########################################################################
-    # --- Upgrade System ---
+    # --- Update / Upgrade System ---
     ###########################################################################
     - name: Full system upgrade
       pacman:
         update_cache: yes
         upgrade: yes
       become: yes
-
-    ###########################################################################
-    ###########################################################################
-    # --- Handlers --- MUST COME LAST
-    ###########################################################################
-    ###########################################################################
