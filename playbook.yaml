@@ -1,24 +1,32 @@
 ---
 - name: System Setup Post-Install
-  hosts: all
+  hosts: localhost
+  become: yes
+  vars_files:
+    - packages.yaml
   vars:
     # Playbook-wide variables
     username: jdv
     dotfiles_repo: "https://github.com/jdvober/dotfiles.git"
     dotfiles_path: /home/{{ username}}/github.com/jdvober/dotfiles/
     global_fonts_path: /usr/local/share/fonts/ # Destination for global font usage.
+    required_folders:
+      - "{{ global_fonts_path }}"
+      - "{{ dotfiles_path }}"
+    dotfiles_folders:
+        - beets
+        - eza
+        - fish
+        - neofetch
+        - nvim
+        - vim
+        - wezterm
+        - yazi
+        - zsh
   tasks:
     ###########################################################################
     # --- Installing Packages ---
     ###########################################################################
-    - name: Install Linux Packages
-      hosts: localhost
-      connection: local
-      become: yes
-      vars_files:
-        - packages.yaml
-    
-      tasks:
         - name: Enable Multilib repository
           replace:
             path: /etc/pacman.conf
@@ -124,7 +132,7 @@
             name: "{{ pacman_packages }}"
             state: present
           become: yes
-          when: ansible_os_family == "Archlinux"
+          when: ansible_facts['os_family'] == "Archlinux"
           ignore_errors: true # Like nofail for fstab
     
     
@@ -137,7 +145,7 @@
             use: makepkg
             state: present
           become: yes
-          when: ansible_os_family == "Archlinux"
+          when: ansible_facts['os_family'] == "Archlinux"
           become_user: aur_builder
           loop: "{{ aur_packages }}"
     
@@ -145,11 +153,11 @@
         # Install Debian-only packages
         ###########################################################################
         - name: Install Debian-specific packages
-          ansible.builtin.package:
+          package:
             name: "{{ debian_packages }}"
             state: present
             update_cache: yes
-          when: ansible_os_family == "Debian"
+          when: ansible_facts['os_family'] == "Debian"
           become: yes
           ignore_errors: true # Like nofail for fstab
     
@@ -184,51 +192,28 @@
     ###########################################################################
     # --- DOTFILES ---
     ###########################################################################
-    - name: Set up system configuration
-      hosts: localhost
-      connection: local
-      become: yes
-      vars:
-        required_folders:
-          - {{ global_fonts_path }}
-          - {{ dotfiles_path }}
-        dotfiles_folders:
-            - beets
-            - eza
-            - fish
-            - neofetch
-            - nvim
-            - vim
-            - wezterm
-            - yazi
-            - zsh
-      
-      tasks:
         ###########################################################################
         # --- Cloning Dotfiles Repo ---
         ###########################################################################
 
-        - name: Check existence of all required_folders listed above
-          ansible.builtin.stat:
-            path: "{{ item }}"
-          loop: "{{ required_folders }}"
-          register: folder_stats
-      
+        - name: Check if dotfiles directory exists
+          stat:
+            path: "{{ dotfiles_path }}"
+          register: repo_status
+        
         - name: Clone dotfiles repository
           become: no
           git:
             repo: "{{ dotfiles_repo }}"
-            dest: {{ dotfiles_path }}
+            dest: "{{ dotfiles_path }}"
             update: yes
-          when: 
-            - not item.stat.exists
-            - item.item == {{ dotfiles_path }}
+          when: not repo_status.stat.exists
     
         ###########################################################################
         # --- Symlinking Dotfiles ---
         ###########################################################################
         - name: Check existence of all dotfiles_folders listed above
-          ansible.builtin.stat:
+          stat:
             path: "{{ item }}"
           loop: "{{ dotfiles_folders }}"
           register: dotfiles_folder_stats
@@ -239,7 +224,7 @@
             src: "{{ dotfiles_path }}/.config/{{ item }}"
             dest: "~/.config/{{ item }}"
             state: link
-          loop: {{ dotfiles_folders.results }}
+          loop: "{{ dotfiles_folders.results }}"
           when: not item.stat.exists
     
         ###########################################################################
@@ -249,17 +234,8 @@
           become: yes 
           copy:
             src: "{{ dotfiles_path}}/fonts/"
-            dest: {{ global_fonts_path }}
+            dest: "{{ global_fonts_path }}"
             mode: '0755'
           when: 
             - not item.stat.exists
             - item.item == {{ global_fonts_path }}
-    
-    ###########################################################################
-    # --- Update / Upgrade System ---
-    ###########################################################################
-    - name: Full system upgrade
-      pacman:
-        update_cache: yes
-        upgrade: yes
-      become: yes

@@ -13,21 +13,50 @@ ansible-galaxy collection install kewlfft.aur community.general
 
 ## Conditional use of folders
 
-### Example
+### Example: Single File or Folder Exists
+
+Definition
 
 ```yaml
-- name: Create folders only if they do not exist
-  ansible.builtin.file:
-    path: "{{ item.item }}" # 'item.item' is the original path from the previous loop
-    state: directory
-  loop: "{{ folder_stats.results }}"
+- name: Check if dotfiles directory exists
+    stat:
+      path: "{{ dotfiles_path }}"
+    register: repo_status
 ```
-
-Then in the task:
+      
+Consuming
 
 ```yaml
-    when: 
-     - not item.stat.exists
-     - item.item == "path/to/folder/from/required_folders"
+- name: Clone dotfiles repository
+    become: no
+    git:
+      repo: "{{ dotfiles_repo }}"
+      dest: "{{ dotfiles_path }}"
+      update: yes
+    when: not repo_status.stat.exists
 ```
 
+### Example: Loop through files / folders
+
+Definition
+
+```yaml
+- name: Check existence of all dotfiles_folders listed above
+  stat:
+    path: "{{ item }}"
+  loop: "{{ dotfiles_folders }}"
+  register: dotfiles_folder_stats
+```
+
+Consuming
+
+```yaml
+- name: Symlink configuration directories to ~/.config from dotfiles
+  become: no
+  file:
+    src: "{{ dotfiles_path }}/.config/{{ item }}"
+    dest: "~/.config/{{ item }}"
+    state: link
+  loop: "{{ dotfiles_folders_stats }}"
+  when: not item.stat.exists
+```
