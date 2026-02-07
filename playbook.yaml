@@ -126,42 +126,59 @@
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
-        # Install Arch-only packages
+        # Install / Remove Arch-only packages
         ###########################################################################
         - name: Install Arch-specific packages with Pacman (non-AUR)
           when: ansible_facts['os_family'] == "Archlinux"
           pacman:
-            name: "{{ pacman_packages }}"
+            name: "{{ pacman_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
             state: present
           become: yes
           ignore_errors: true # Like nofail for fstab
-    
-    
+
+        - name: Uninstall Arch-specific packages with Pacman (non-AUR)
+          when: ansible_facts['os_family'] == "Archlinux"
+          pacman:
+            name: "{{ pacman_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+            state: absent
+          become: yes
+          ignore_errors: true # Like nofail for fstab
+
         ###########################################################################
         # Install AUR packages
         ###########################################################################
-        - name: Install AUR packages
+
+        - name: Install AUR Packages
           when: ansible_facts['os_family'] == "Archlinux"
           kewlfft.aur.aur:
-            name: "{{ item }}"
-            use: makepkg
+            name: "{{ aur_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
             state: present
           become: yes
           become_user: aur_builder
-          loop: "{{ aur_packages }}"
+          ignore_errors: true # Like nofail for fstab
+
+        - name: Uninstall Arch-specific packages with Pacman (non-AUR)
+          when: ansible_facts['os_family'] == "Archlinux"
+          pacman:
+            name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+            state: absent
+          become: yes
+          become_user: aur_builder
+          ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
         # Install Debian-only packages
         ###########################################################################
-        - name: Install Debian-specific packages
-          package:
-            name: "{{ debian_packages }}"
-            state: present
-            update_cache: yes
+          # Removes any packages marked for deletion in packages.yaml
+        - name: Install and Remove Debian-specific packages with apt
           when: ansible_facts['os_family'] == "Debian"
+          apt:
+            name: "{{ item.name}}"
+            state: "{{ item.state }}"
+          loop: "{{ debian_packages }}"
           become: yes
           ignore_errors: true # Like nofail for fstab
-    
+
         ###########################################################################
         # --- FLATPAK SETUP ---
         ###########################################################################
@@ -178,13 +195,16 @@
             flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
           become: yes # Use 'yes' for system-wide or 'no' for user-level
     
-        - name: Install Flatpak applications
+        # Removes any packages marked for deletion in packages.yaml
+        - name: Install and Remove Flatpaks
+          when: ansible_facts['os_family'] == "Archlinux"
           community.general.flatpak:
-            name: "{{ flatpaks }}"
-            state: present
-            remote: flathub
+            name: "{{ item.name}}"
+            state: "{{ item.state }}"
+          loop: "{{ flatpaks }}"
           become: yes # Optional: Install to user space instead of system-wide
-    
+          ignore_errors: true # Like nofail for fstab
+
         - name: Uninstall unused Flatpak runtimes
           command: flatpak uninstall --unused -y
           changed_when: false
@@ -248,3 +268,81 @@
             src: "{{ dotfiles_path}}/fonts/"
             dest: "{{ global_fonts_path }}"
             mode: '0755'
+
+  ###########################################################################
+  #  Updating and Upgrading
+  ###########################################################################
+        # --- ARCH LINUX UPDATES ---
+        - name: Update Arch system packages (pacman)
+          community.general.pacman:
+            update_cache: yes
+            upgrade: yes
+          become: yes
+          when: ansible_facts['os_family'] == "Archlinux"
+
+        - name: Update AUR packages (using yay)
+          command: yay
+          when: ansible_facts['os_family'] == "Archlinux"
+
+        # --- DEBIAN SERVER UPDATES ---
+        - name: Update Debian system packages (apt)
+          apt:
+            update_cache: yes
+            upgrade: dist
+          become: yes
+          when: ansible_facts['os_family'] == "Debian"
+
+        # --- UNIVERSAL FLATPAK UPDATE ---
+        - name: Update all installed Flatpaks
+          command: flatpak update --noninteractive
+          when: ansible_facts['system'] == "Linux"
+          register: flatpak_result
+          changed_when: "'Nothing to do' not in flatpak_result.stdout"
+
+        - name: Remove all Flatpaks that are no longer required
+          command: flatpak uninstall --unused -y
+          when: ansible_facts['system'] == "Linux"
+          changed_when: false
+
+        # --- WINDOWS 11 WORK UPDATES ---
+        - name: Install all Windows updates
+          ansible.windows.win_updates:
+            category_names: '*'
+            reboot: yes
+          when: ansible_facts['os_family'] == "Windows"
+        
+        ###########################################################################
+        #  Cleanup
+        ###########################################################################
+        - name: System Cleanup and Maintenance
+          block:
+            # ARCH CLEANUP
+            - name: Remove orphaned packages (Arch)
+              command: pacman -Rs $(pacman -Qdtq)
+              register: orphan_out
+              failed_when: false # Don't fail if no orphans are found
+              changed_when: orphan_out.rc == 0
+              become: yes
+              when: ansible_facts['distribution'] == "Archlinux"
+
+            - name: Clean Pacman cache (keep latest 3)
+              command: paccache -r
+              become: yes
+              when: ansible_facts['distribution'] == "Archlinux"
+
+            # DEBIAN CLEANUP
+            - name: Remove unused dependencies (Debian)
+              apt:
+                autoremove: yes
+                purge: yes
+              become: yes
+              when: ansible_facts['os_family'] == "Debian"
+
+            # UNIVERSAL FLATPAK CLEANUP
+            - name: Uninstall unused Flatpak runtimes
+              command: flatpak uninstall --unused -y
+              register: fp_cleanup
+              changed_when: "'Nothing to do' not in fp_cleanup.stdout"
+              when: ansible_facts['system'] == "Linux"
+          
+          ignore_errors: true # Continue even if a cleanup task fails

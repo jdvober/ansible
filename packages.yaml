@@ -2,127 +2,130 @@
 cross_platform_packages:
   - git
 pacman_packages: 
-  - alacritty
-  - alsa-plugins
-  - alsa-utils
-  - asciidoc
-  - audacity
-  - bash-language-server
-  - bat
-  - bitwarden
-  - btop
-  - calf
-  - cifs-utils
-  - cowsay
-  - discord
-  - distrobox
-  - dust
-  - easyeffects
-  - evince
-  - eza
-  - fastfetch
-  - feh
-  - firefox
-  - fish # after setting fish as the default shell from bash, you must copy /usr/etc/shells to /etc/shells as root for it to not lock you out of your user account!
-  - font-manager
-  - fprintd
-  - fuse
-  - fx
-  - fzf
-  - gcc
-  - gimp
-  - gnome-disk-utility
-  - go
-  - go-tools
-  - gopls
-  - greetd
-  - gthumb
-  - imagemagick
-  - inkscape
-  - jedi-language-server
-  - jq
-  - keychain
-  - libreoffice
-  - lolcat
-  - lsp-plugins-lv2
-  - lxappearance
-  - make
-  - mda.lv2
-  - mlocate
-  - mpv
-  - mupdf
-  - nodejs
-  - npm
-  - ntfs-3g
-  - obs-studio
-  - obsidian
-  - openssh
-  - p7zip
-  - pacman-contrib
-  - pandoc
-  - pavucontrol-qt
-  - pipewire
-  - pipewire-alsa
-  - pipewire-pulse
-  - python
-  - python-pip
-  - python-pipx
-  - python-pynvim
-  - qtile
-  - rclone
-  - rdfind
-  - reflector
-  - ripgrep
-  - rofi
-  - rsnapshot
-  - rsync
-  - rustup
-  - samba
-  - scrot
-  - shutter
-  - starship
-  - steam
-  - switcheroo-control
-  - tar
-  - thunar
-  - thunar-archive-plugin
-  - thunar-media-tags-plugin
-  - thunar-volman
-  - tmux
-  - ttf-fira-code
-  - ttf-nerd-fonts-symbols-mono
-  - typescript-language-server
-  - unrar
-  - usbutils
-  - uv
-  - vi
-  - vlc
-  - w3m
-  - watchexec
-  - wezterm
-  - wget
-  - wireplumber
-  - xarchiver
-  - xclip
-  - xf86-input-wacom
-  - xfce4-settings
-  - yaml-language-server
-  - yarn
-  - yazi
-  - zam-plugins-lv2
-  - zathura
-  - zathura-pdf-mupdf
-  - zoxide
+  - { name: 'alacritty', state: 'present'}
+  - { name: 'alsa-plugins', state: 'present'}
+  - { name: 'alsa-utils', state: 'present'}
+  - { name: 'asciidoc', state: 'present'}
+  - { name: 'audacity', state: 'present'}
+  - { name: 'bash-language-server', state: 'present'}
+  - { name: 'bat', state: 'present'}
+  - { name: 'bitwarden', state: 'present'}
+  - { name: 'btop', state: 'present'}
+  - { name: 'calf', state: 'present'}
+  - { name: 'cifs-utils', state: 'present'}
+  - { name: 'cowsay', state: 'present'}
+  - { name: 'discord', state: 'present'}
+  - { name: 'distrobox', state: 'present'}
+  - { name: 'dust', state: 'present'}
+  - { name: 'easyeffects', state: 'present'}
+  - { name: 'evince', state: 'present'}
+  - { name: 'eza', state: 'present'}
+  - { name: 'fastfetch', state: 'present'}
+  - { name: 'feh', state: 'present'}
+  - { name: 'firefox', state: 'present'}
+# after setting fish as the default shell from bash, you must copy /usr/etc/shells to /etc/shells as root for it to not lock you out of your user account'
+  - { name: 'fish', state: 'present'}
+  - { name: 'font-manager', state: 'present'}
+  - { name: 'fprintd', state: 'present'}
+  - { name: 'fuse', state: 'present'}
+  - { name: 'fx', state: 'present'}
+  - { name: 'fzf', state: 'present'}
+  - { name: 'gcc', state: 'present'}
+  - { name: 'gimp', state: 'present'}
+  - { name: 'gnome-disk-utility', state: 'present'}
+  - { name: 'go', state: 'present'}
+  - { name: 'go-tools', state: 'present'}
+  - { name: 'gopls', state: 'present'}
+  - { name: 'greetd', state: 'present'}
+  - { name: 'gthumb', state: 'present'}
+  - { name: 'imagemagick', state: 'present'}
+  - { name: 'inkscape', state: 'present'}
+  - { name: 'jedi-language-server', state: 'present'}
+  - { name: 'jq', state: 'present'}
+  - { name: 'keychain', state: 'present'}
+  - { name: 'libreoffice', state: 'present'}
+  - { name: 'lolcat', state: 'present'}
+  - { name: 'lsp-plugins-lv2', state: 'present'}
+  - { name: 'lxappearance', state: 'present'}
+  - { name: 'make', state: 'present'}
+  - { name: 'mda.lv2', state: 'present'}
+  - { name: 'mlocate', state: 'present'}
+  - { name: 'mpv', state: 'present'}
+  - { name: 'mupdf', state: 'present'}
+  - { name: 'nodejs', state: 'present'}
+  - { name: 'npm', state: 'present'}
+  - { name: 'ntfs-3g', state: 'present'}
+  - { name: 'obs-studio', state: 'present'}
+  - { name: 'obsidian', state: 'present'}
+  - { name: 'openssh', state: 'present'}
+  - { name: 'p7zip', state: 'present'}
+  - { name: 'pacman-contrib', state: 'present'}
+  - { name: 'pandoc', state: 'present'}
+  - { name: 'pavucontrol-qt', state: 'present'}
+  - { name: 'pipewire', state: 'present'}
+  - { name: 'pipewire-alsa', state: 'present'}
+  - { name: 'pipewire-pulse', state: 'present'}
+  - { name: 'python', state: 'present'}
+  - { name: 'python-pip', state: 'present'}
+  - { name: 'python-pipx', state: 'present'}
+  - { name: 'python-pynvim', state: 'present'}
+  - { name: 'qtile', state: 'present'}
+  - { name: 'rclone', state: 'present'}
+  - { name: 'rdfind', state: 'present'}
+  - { name: 'reflector', state: 'present'}
+  - { name: 'ripgrep', state: 'present'}
+  - { name: 'rofi', state: 'present'}
+  - { name: 'rsnapshot', state: 'present'}
+  - { name: 'rsync', state: 'present'}
+  - { name: 'rustup', state: 'present'}
+  - { name: 'samba', state: 'present'}
+  - { name: 'scrot', state: 'present'}
+  - { name: 'shutter', state: 'present'}
+  - { name: 'starship', state: 'present'}
+  - { name: 'steam', state: 'present'}
+  - { name: 'switcheroo-control', state: 'present'}
+  - { name: 'tar', state: 'present'}
+  - { name: 'thunar', state: 'present'}
+  - { name: 'thunar-archive-plugin', state: 'present'}
+  - { name: 'thunar-media-tags-plugin', state: 'present'}
+  - { name: 'thunar-volman', state: 'present'}
+  - { name: 'tidal-hifi-bin', state: 'absent'}
+  - { name: 'tmux', state: 'present'}
+  - { name: 'ttf-fira-code', state: 'present'}
+  - { name: 'ttf-nerd-fonts-symbols-mono', state: 'present'}
+  - { name: 'typescript-language-server', state: 'present'}
+  - { name: 'unrar', state: 'present'}
+  - { name: 'usbutils', state: 'present'}
+  - { name: 'uv', state: 'present'}
+  - { name: 'vi', state: 'present'}
+  - { name: 'vlc', state: 'present'}
+  - { name: 'w3m', state: 'present'}
+  - { name: 'watchexec', state: 'present'}
+  - { name: 'wezterm', state: 'present'}
+  - { name: 'wget', state: 'present'}
+  - { name: 'wireplumber', state: 'present'}
+  - { name: 'xarchiver', state: 'present'}
+  - { name: 'xclip', state: 'present'}
+  - { name: 'xf86-input-wacom', state: 'present'}
+  - { name: 'xfce4-settings', state: 'present'}
+  - { name: 'yaml-language-server', state: 'present'}
+  - { name: 'yarn', state: 'present'}
+  - { name: 'yazi', state: 'present'}
+  - { name: 'zam-plugins-lv2', state: 'present'}
+  - { name: 'zathura', state: 'present'}
+  - { name: 'zathura-pdf-mupdf', state: 'present'}
+  - { name: 'zoxide', state: 'present'}
 aur_packages:
-  - yay-bin
-  - visual-studio-code-bin
-  - bambustudio-bin
-  - f1multiviewer-bin
-  - f1mv-lights-integration-bin
-  - feishin-bin
-  - github-desktop-bin
-  - neovim-nightly-bin
-  - tidal-hifi-bin
+  - { name: 'yay-bin', state: 'present' }
+  - { name: 'visual-studio-code-bin', state: 'present' }
+  - { name: 'bambustudio-bin', state: 'present' }
+  - { name: 'f1multiviewer-bin', state: 'present' }
+  - { name: 'f1mv-lights-integration-bin', state: 'present'}
+  - { name: 'feishin-bin', state: 'present' }
+  - { name: 'github-desktop-bin', state: 'present' }
+  - { name: 'neovim-nightly-bin', state: 'present' }
+  - { name: 'google-chrome', state: 'present' }
 flatpaks:
-  - com.discordapp.Discord
-  - com.github.tchx84.Flatseal
+  - { name: 'com.discordapp.Discord', state: 'present' }
+  - { name: 'com.github.tchx84.Flatseal', state: 'present' }
+  - { name: 'com.mastermindzh.tidal-hif', state: 'present' }
