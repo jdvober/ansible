@@ -36,8 +36,8 @@
           register: pacman_config
     
         - name: Update pacman cache if config changed
-          command: pacman -Sy
           when: pacman_config.changed
+          command: pacman -Sy
           become: yes
     
         ###########################################################################
@@ -80,8 +80,8 @@
           register: snapper_config
     
         - name: Initialize snapper config for root
-          command: snapper -c root create-config /
           when: not snapper_config.stat.exists
+          command: snapper -c root create-config /
     
         - name: Enable refind-btrfs service
           systemd:
@@ -128,11 +128,11 @@
         # Install Arch-only packages
         ###########################################################################
         - name: Install Arch-specific packages with Pacman (non-AUR)
+          when: ansible_facts['os_family'] == "Archlinux"
           pacman:
             name: "{{ pacman_packages }}"
             state: present
           become: yes
-          when: ansible_facts['os_family'] == "Archlinux"
           ignore_errors: true # Like nofail for fstab
     
     
@@ -140,12 +140,12 @@
         # Install AUR packages
         ###########################################################################
         - name: Install AUR packages
+          when: ansible_facts['os_family'] == "Archlinux"
           kewlfft.aur.aur:
             name: "{{ item }}"
             use: makepkg
             state: present
           become: yes
-          when: ansible_facts['os_family'] == "Archlinux"
           become_user: aur_builder
           loop: "{{ aur_packages }}"
     
@@ -202,40 +202,48 @@
           register: repo_status
         
         - name: Clone dotfiles repository
+          when: not repo_status.stat.exists
           become: no
           git:
             repo: "{{ dotfiles_repo }}"
             dest: "{{ dotfiles_path }}"
             update: yes
-          when: not repo_status.stat.exists
     
         ###########################################################################
         # --- Symlinking Dotfiles ---
         ###########################################################################
         - name: Check existence of all dotfiles_folders listed above
           stat:
-            path: "{{ item }}"
+            path: "{{ folder_path }}"
           loop: "{{ dotfiles_folders }}"
+          loop_control:
+            loop_var: folder_path
           register: dotfiles_folder_stats
 
         - name: Symlink configuration directories to ~/.config from dotfiles
+          when: not folder_stat.stat.exists
           become: no
           file:
-            src: "{{ dotfiles_path }}/.config/{{ item }}"
-            dest: "~/.config/{{ item }}"
+            src: "{{ dotfiles_path }}/.config/{{ folder_stat.folder_path | basename }}"
+            dest: "~/.config/{{ folder_stat.folder_path | basename }}"
             state: link
-          loop: "{{ dotfiles_folders.results }}"
-          when: not item.stat.exists
+          loop: "{{ dotfiles_folder_stats.results }}"
+          loop_control:
+            loop_var: folder_stat
+            label: "{{ folder_stat.folder_path }}" # Cleans up terminal output
     
         ###########################################################################
         #  Copy Fonts
         ###########################################################################
+        - name: Check if fonts have been copied
+          stat:
+            path: "{{ global_fonts_path }}/fira"
+          register: fira_status
+
         - name: Copy fonts
+          when: not fira_status.stat.exists
           become: yes 
           copy:
             src: "{{ dotfiles_path}}/fonts/"
             dest: "{{ global_fonts_path }}"
             mode: '0755'
-          when: 
-            - not item.stat.exists
-            - item.item == {{ global_fonts_path }}

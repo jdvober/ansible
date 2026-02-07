@@ -54,9 +54,9 @@ Consuming
 - name: Symlink configuration directories to ~/.config from dotfiles
   become: no
   file:
-    src: "{{ dotfiles_path }}/.config/{{ item }}"
-    dest: "~/.config/{{ item }}"
+    src: "{{ dotfiles_path }}/.config/{{ item.item | basename }}"
+    dest: "~/.config/{{ item.item | basename }}"
     state: link
-  loop: "{{ dotfiles_folders_stats }}"
+  loop: "{{ dotfiles_folder_stats.results }}"
   when: not item.stat.exists
 ```
