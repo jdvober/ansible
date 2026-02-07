@@ -15,48 +15,66 @@ ansible-galaxy collection install kewlfft.aur community.general
 
 ### Example: Single File or Folder Exists
 
-Definition
+Check to see if the folder exists, and store the result as a variable called "folder_exists_status"
 
 ```yaml
-- name: Check if dotfiles directory exists
-    stat:
-      path: "{{ dotfiles_path }}"
-    register: repo_status
+- name: Check if a folder exists
+  stat:
+    path: "/path/to/folder"
+  register: folder_exists_status
 ```
       
-Consuming
+To conditionally do something when the folder does not exist
 
 ```yaml
-- name: Clone dotfiles repository
-    become: no
-    git:
-      repo: "{{ dotfiles_repo }}"
-      dest: "{{ dotfiles_path }}"
-      update: yes
-    when: not repo_status.stat.exists
+- name: Copy folder if destination does not exist
+  when: not folder_exists_status.stat.exists
+  become: yes 
+  copy:
+    src: "/path/to/folder"
+    dest: "/path/to/destination"
+    mode: '0755'
 ```
 
 ### Example: Loop through files / folders
 
-Definition
+- Check each file or folder and store the results in parent_folder_stats
+
+- Each item's result is named to subfolder_path
+
+- "{{ subfolders }}" is a var that looks like this:
 
 ```yaml
-- name: Check existence of all dotfiles_folders listed above
-  stat:
-    path: "{{ item }}"
-  loop: "{{ dotfiles_folders }}"
-  register: dotfiles_folder_stats
+vars:
+    subfolders:
+        - name1
+        - name2
 ```
 
-Consuming
+Checking each subfolder with a loop:
 
 ```yaml
-- name: Symlink configuration directories to ~/.config from dotfiles
+- name: Check existence of all subfolders listed above
+  stat:
+    path: "{{ subfolder_path }}"
+  loop: "{{ subfolders }}"
+  loop_control:
+    loop_var: subfolder_path
+  register: parent_folder_statuses
+```
+
+Looping and consuming
+
+```yaml
+- name: Example: Symlinking
+  when: not subfolder_status.stat.exists
   become: no
   file:
-    src: "{{ dotfiles_path }}/.config/{{ item.item | basename }}"
-    dest: "~/.config/{{ item.item | basename }}"
+    src: "{{ parent_folder_path }}/{{ subfolder_status.subfolder_path | basename }}"
+    dest: "path/to/destination/{{ subfolder_status.subfolder_path | basename }}"
     state: link
-  loop: "{{ dotfiles_folder_stats.results }}"
-  when: not item.stat.exists
+  loop: "{{ parent_folder_statuses.results }}"
+  loop_control:
+    loop_var: subfolder_status
+    label: "{{subfolder_status.subfolder_path }}" # Cleans up terminal output
 ```
