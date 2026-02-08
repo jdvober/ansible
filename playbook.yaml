@@ -358,6 +358,7 @@
               register: aur_present_individual_results
               ignore_errors: yes
               become: yes
+              become_user: aur_builder
 
             - name: Record specific package errors
               set_fact:
@@ -388,6 +389,7 @@
               register: aur_latest_individual_results
               ignore_errors: yes
               become: yes
+              become_user: aur_builder
 
             - name: Record specific package errors
               set_fact:
@@ -418,6 +420,7 @@
               register: aur_absent_individual_results
               ignore_errors: yes
               become: yes
+              become_user: aur_builder
 
             - name: Record specific package errors
               set_fact:
@@ -512,8 +515,6 @@
             - name: Record specific package errors
               set_fact:
                 maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
-              loop: "{{ debian_absent_individual_results.results }}"
-              when: item.failed
 
         ###########################################################################
         # --- Sync flatpak_packages ---

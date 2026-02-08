@@ -15,7 +15,7 @@ pacman_packages:
   - { name: 'calf', state: 'latest'}
   - { name: 'cifs-utils', state: 'latest'}
   - { name: 'cowsay', state: 'latest'}
-  - { name: 'discord', state: 'latest'}
+  - { name: 'discord', state: 'absent'}
   - { name: 'distrobox', state: 'latest'}
   - { name: 'dust', state: 'latest'}
   - { name: 'easyeffects', state: 'latest'}
