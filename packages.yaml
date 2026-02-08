@@ -7,8 +7,8 @@ pacman_packages:
   - { name: 'alsa-utils', state: 'latest'}
   - { name: 'asciidoc', state: 'latest'}
   - { name: 'audacity', state: 'latest'}
-  - { name: 'bash-language-server', state: 'latest'}
   - { name: 'bambustudio-bin', state: 'absent'}
+  - { name: 'bash-language-server', state: 'latest'}
   - { name: 'bat', state: 'latest'}
   - { name: 'bitwarden', state: 'latest'}
   - { name: 'btop', state: 'latest'}
@@ -112,6 +112,7 @@ pacman_packages:
   - { name: 'xclip', state: 'latest'}
   - { name: 'xf86-input-wacom', state: 'latest'}
   - { name: 'xfce4-settings', state: 'latest'}
+  - { name: 'xorg', state: 'latest'}
   - { name: 'yaml-language-server', state: 'latest'}
   - { name: 'yarn', state: 'latest'}
   - { name: 'yazi', state: 'latest'}
@@ -120,16 +121,16 @@ pacman_packages:
   - { name: 'zathura-pdf-mupdf', state: 'latest'}
   - { name: 'zoxide', state: 'latest'}
 aur_packages:
-  - { name: 'yay-bin', state: 'latest' }
-  - { name: 'tidal-hifi-bin', state: 'latest' }
   - { name: 'discord_arch_electron', state: 'latest' }
-  - { name: 'visual-studio-code-bin', state: 'latest' }
   - { name: 'f1multiviewer-bin', state: 'latest' }
   - { name: 'f1mv-lights-integration-bin', state: 'latest'}
   - { name: 'feishin-bin', state: 'latest' }
   - { name: 'github-desktop-bin', state: 'latest' }
-  - { name: 'neovim-nightly-bin', state: 'latest' }
   - { name: 'google-chrome', state: 'latest' }
+  - { name: 'neovim-nightly-bin', state: 'latest' }
+  - { name: 'tidal-hifi-bin', state: 'latest' }
+  - { name: 'visual-studio-code-bin', state: 'latest' }
+  - { name: 'yay-bin', state: 'latest' }
 debian_packages:
 flatpak_packages:
 ######### Flatpaks can only be 'present' or 'absent'.  'Latest' is not allowed
