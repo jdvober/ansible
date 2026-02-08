@@ -1,7 +1,7 @@
 ---
 - name: System Setup Post-Install
   # specify what hosts this should run on.  See inventory.yaml for hosts
-  hosts: localMachine
+  hosts: this-local-machine
   become: yes
   vars_files:
     - packages.yaml
@@ -28,7 +28,7 @@
         - zsh
   tasks:
     ###########################################################################
-    # --- Installing Packages ---
+    # --- Package Installation Setup ---
     ###########################################################################
         - name: Enable Multilib repository
           replace:
@@ -43,6 +43,22 @@
           command: pacman -Sy
           become: yes
     
+        ###########################################################################
+        # --- FLATPAK SETUP ---
+        ###########################################################################
+        - name: Ensure flatpak is installed
+          pacman:
+            name: flatpak
+            state: latest
+          become: yes
+    
+        - name: Add Flathub repository
+          community.general.flatpak_remote:
+            name: flathub
+            state: present
+            flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+          become: yes # Use 'yes' for system-wide or 'no' for user-level
+
         ###########################################################################
         # --- AUR SUPPORT SETUP ---
         ###########################################################################
@@ -67,13 +83,13 @@
             name: 
               - snapper
               - snap-pac
-            state: present
+            state: latest
     
         - name: Install refind-btrfs from AUR
           kewlfft.aur.aur:
             name: refind-btrfs
             use: makepkg
-            state: present
+            state: latest
           become: yes
           become_user: aur_builder
     
@@ -118,25 +134,28 @@
           loop:
             - snapper-cleanup.timer
             - snapper-timeline.timer
+    ###########################################################################
+    # --- Syncing Packages ---
+    ###########################################################################
     
         ###########################################################################
-        # --- Install Cross Platform Packages ---
+        # --- Sync Cross Platform Packages ---
         ###########################################################################
         - name: Install Cross platform packages
           package:
             name: "{{ cross_platform_packages }}"
-            state: present
+            state: latest
           become: yes
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
-        # --- Install / Remove Arch-only packages ---
+        # --- Sync Arch-only packages ---
         ###########################################################################
         - name: Install Arch-specific packages with Pacman (non-AUR)
           when: ansible_facts['os_family'] == "Archlinux"
           pacman:
-            name: "{{ pacman_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
-            state: present
+            name: "{{ pacman_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+            state: latest
           become: yes
           ignore_errors: true # Like nofail for fstab
 
@@ -149,19 +168,19 @@
           ignore_errors: true # Like nofail for fstab
 
         ###########################################################################
-        # --- Install AUR packages ---
+        # --- Sync AUR packages ---
         ###########################################################################
 
         - name: Install AUR Packages
           when: ansible_facts['os_family'] == "Archlinux"
           kewlfft.aur.aur:
-            name: "{{ aur_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
-            state: present
+            name: "{{ aur_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
+            state: latest
           become: yes
           become_user: aur_builder
           ignore_errors: true # Like nofail for fstab
 
-        - name: Uninstall Arch-specific packages with Pacman (non-AUR)
+        - name: Uninstall AUR Packages
           when: ansible_facts['os_family'] == "Archlinux"
           pacman:
             name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
@@ -171,7 +190,7 @@
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
-        # --- Install Debian-only packages ---
+        # --- Sync Debian-only packages ---
         ###########################################################################
           # Removes any packages marked for deletion in packages.yaml
         - name: Install and Remove Debian-specific packages with apt
@@ -183,27 +202,23 @@
           become: yes
           ignore_errors: true # Like nofail for fstab
 
-        ###########################################################################
-        # --- FLATPAK SETUP ---
-        ###########################################################################
-        - name: Ensure flatpak is installed
-          pacman:
-            name: flatpak
-            state: present
-          become: yes
     
-        - name: Add Flathub repository
-          community.general.flatpak_remote:
-            name: flathub
-            state: present
-            flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-          become: yes # Use 'yes' for system-wide or 'no' for user-level
-    
-        - name: Install and Remove Flatpaks
+        ###########################################################################
+        # --- Sync Flatpaks -only packages ---
+        ###########################################################################
+        - name: Install Flatpaks
           when: ansible_facts['os_family'] == "Archlinux"
           community.general.flatpak:
             name: "{{ flatpaks | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
             state: present
+          become: yes # Optional: Install to user space instead of system-wide
+          ignore_errors: true # Like nofail for fstab
+
+        - name: Remove Flatpaks
+          when: ansible_facts['os_family'] == "Archlinux"
+          community.general.flatpak:
+            name: "{{ flatpaks | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+            state: absent
           become: yes # Optional: Install to user space instead of system-wide
           ignore_errors: true # Like nofail for fstab
 

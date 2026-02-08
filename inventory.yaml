@@ -5,17 +5,17 @@ all:
     # Can reference hosts: localMachine in playbook to target the stuff only at a specific machine.
     localMachine:
       hosts:
-        localGaming:
+        this-local-machine:
           ansible_connection: local
     # Can reference hosts: personal in playbook to target the stuff only at the listed machines
     personal:
       hosts:
-        gaming:
+        main-ssh:
           ansible_host: 192.168.1.42
           ansible_user: jdv
     # Can reference hosts: servers in playbook to target the stuff only found on servers
     servers:
       hosts:
-        stan-server:
+        stan-server-ssh:
           ansible_host: 192.168.1.69
           ansible_user: jdv
