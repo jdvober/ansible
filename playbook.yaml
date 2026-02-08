@@ -195,13 +195,11 @@
             flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
           become: yes # Use 'yes' for system-wide or 'no' for user-level
     
-        # Removes any packages marked for deletion in packages.yaml
         - name: Install and Remove Flatpaks
           when: ansible_facts['os_family'] == "Archlinux"
           community.general.flatpak:
-            name: "{{ item.name}}"
-            state: "{{ item.state }}"
-          loop: "{{ flatpaks }}"
+            name: "{{ flatpaks | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+            state: present
           become: yes # Optional: Install to user space instead of system-wide
           ignore_errors: true # Like nofail for fstab
 

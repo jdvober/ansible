@@ -23,8 +23,7 @@ pacman_packages:
   - { name: 'fastfetch', state: 'present'}
   - { name: 'feh', state: 'present'}
   - { name: 'firefox', state: 'present'}
-# after setting fish as the default shell from bash, you must copy /usr/etc/shells to /etc/shells as root for it to not lock you out of your user account'
-  - { name: 'fish', state: 'present'}
+  - { name: 'fish', state: 'present'} # after setting fish as the default shell from bash, you must copy /usr/etc/shells to /etc/shells as root for it to not lock you out of your user account'
   - { name: 'font-manager', state: 'present'}
   - { name: 'fprintd', state: 'present'}
   - { name: 'fuse', state: 'present'}
@@ -91,6 +90,7 @@ pacman_packages:
   - { name: 'thunar-volman', state: 'present'}
   - { name: 'tidal-hifi-bin', state: 'absent'}
   - { name: 'tmux', state: 'present'}
+  - { name: 'tree-sitter-cli', state: 'present'}
   - { name: 'ttf-fira-code', state: 'present'}
   - { name: 'ttf-nerd-fonts-symbols-mono', state: 'present'}
   - { name: 'typescript-language-server', state: 'present'}
@@ -128,4 +128,4 @@ aur_packages:
 flatpaks:
   - { name: 'com.discordapp.Discord', state: 'present' }
   - { name: 'com.github.tchx84.Flatseal', state: 'present' }
-  - { name: 'com.mastermindzh.tidal-hif', state: 'present' }
+  - { name: 'com.mastermindzh.tidal-hifi', state: 'present' }
