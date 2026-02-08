@@ -157,8 +157,8 @@
             debian_latest_packages: "{{ (debian_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
             debian_absent_packages: "{{ (debian_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
 
-            flatpak_present_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
-            flatpak_absent_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+            flatpak_present_packages: "{{ (flatpak_packages) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            flatpak_absent_packages: "{{ (flatpak_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
         ###########################################################################
         # --- Sync Cross Platform Packages ---
         ###########################################################################
@@ -170,9 +170,23 @@
                 state: present
               become: yes
           rescue:
-            - name: Record Cross-Platform Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              package:
+                name: "{{ item }}"
+                state: present
+              loop: "{{ cross_platform_present_packages }}"
+              register: cross_platform_present_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ cross_platform_present_individual_results.results }}"
+              when: item.failed
 
         - name: Install Latest Cross-Platform packages
           block: 
@@ -182,9 +196,23 @@
                 state: latest
               become: yes
           rescue:
-            - name: Record Cross-Platform Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              package:
+                name: "{{ item }}"
+                state: latest
+              loop: "{{ cross_platform_latest_packages }}"
+              register: cross_platform_latest_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ cross_platform_latest_individual_results.results }}"
+              when: item.failed
 
         - name: Remove Cross-Platform packages
           block: 
@@ -194,9 +222,23 @@
                 state: absent
               become: yes
           rescue:
-            - name: Record Cross Platform Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              package:
+                name: "{{ item }}"
+                state: absent
+              loop: "{{ cross_platform_absent_packages }}"
+              register: cross_platform_absent_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk removeal failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ cross_platform_absent_individual_results.results }}"
+              when: item.failed
     
         ###########################################################################
         # --- Sync Arch-only packages ---
@@ -212,9 +254,23 @@
                 state: present
               become: yes
           rescue:
-            - name: Record Arch Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              pacman:
+                name: "{{ item }}"
+                state: present
+              loop: "{{ pacman_present_packages }}"
+              register: pacman_present_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ pacman_present_individual_results.results }}"
+              when: item.failed
             
 
         - name: Install Latest Arch-specific packages with Pacman (non-AUR)
@@ -228,9 +284,23 @@
                 state: latest
               become: yes
           rescue:
-            - name: Record Arch Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              pacman:
+                name: "{{ item }}"
+                state: latest
+              loop: "{{ pacman_latest_packages }}"
+              register: pacman_latest_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ pacman_latest_individual_results.results }}"
+              when: item.failed
 
         - name: Uninstall Arch-specific packages with Pacman (non-AUR)
           block: 
@@ -243,9 +313,23 @@
                 state: absent
               become: yes
           rescue:
-            - name: Record Arch Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              pacman:
+                name: "{{ item }}"
+                state: absent
+              loop: "{{ pacman_absent_packages }}"
+              register: pacman_absent_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk removeal failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ pacman_absent_individual_results.results }}"
+              when: item.failed
 
         ###########################################################################
         # --- Sync AUR packages ---
@@ -263,9 +347,23 @@
               become: yes
               become_user: aur_builder
           rescue:
-            - name: Record AUR Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              kewlfft.aur.aur:
+                name: "{{ item }}"
+                state: present
+              loop: "{{ aur_present_packages }}"
+              register: aur_present_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ aur_present_individual_results.results }}"
+              when: item.failed
 
         - name: Install Latest AUR Packages
           block: 
@@ -279,9 +377,23 @@
               become: yes
               become_user: aur_builder
           rescue:
-            - name: Record AUR Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              kewlfft.aur.aur:
+                name: "{{ item }}"
+                state: latest
+              loop: "{{ aur_latest_packages }}"
+              register: aur_latest_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ aur_latest_individual_results.results }}"
+              when: item.failed
 
         - name: Uninstall AUR Packages
           block: 
@@ -295,9 +407,23 @@
               become: yes
               become_user: aur_builder
           rescue:
-            - name: Record AUR Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              kewlfft.aur.aur:
+                name: "{{ item }}"
+                state: absent
+              loop: "{{ aur_absent_packages }}"
+              register: aur_absent_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk removeal failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ aur_absent_individual_results.results }}"
+              when: item.failed
     
         ###########################################################################
         # --- Sync Debian packages ---
@@ -313,10 +439,23 @@
                 state: present
               become: yes
           rescue:
-            - name: Record Debian Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              apt:
+                name: "{{ item }}"
+                state: present
+              loop: "{{ debian_present_packages }}"
+              register: debian_present_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Debian: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
-            
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ debian_present_individual_results.results }}"
+              when: item.failed
 
         - name: Install Latest Debian-specific packages with apt
           block: 
@@ -329,9 +468,23 @@
                 state: latest
               become: yes
           rescue:
-            - name: Record Debian Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              apt:
+                name: "{{ item }}"
+                state: latest
+              loop: "{{ debian_latest_packages }}"
+              register: debian_latest_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['apt: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ debian_latest_individual_results.results }}"
+              when: item.failed
 
         - name: Uninstall Debian-specific packages with apt
           block: 
@@ -344,40 +497,82 @@
                 state: absent
               become: yes
           rescue:
-            - name: Record Debian Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              apt:
+                name: "{{ item }}"
+                state: absent
+              loop: "{{ debian_absent_packages }}"
+              register: debian_absent_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['apt: Bulk removeal failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ debian_absent_individual_results.results }}"
+              when: item.failed
 
         ###########################################################################
-        # --- Sync Flatpaks ---
+        # --- Sync flatpak_packages ---
         ###########################################################################
-        - name: Install Flatpaks
+        - name: Install flatpak_packages
           block: 
-            - name: Install Flatpaks
+            - name: Install flatpak_packages
               when: 
                 - flatpak_present_packages | length > 0
               community.general.flatpak:
-                name: "{{ flatpaks | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+                name: "{{ flatpak_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
                 state: present
               become: yes # Optional: Install to user space instead of system-wide
           rescue:
-            - name: Record Flatpak Failure
-              set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Flatpak: Bulk update of flatpaks failed (check logs for conflicts)'] }}"
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              community.general.flatpak:
+                name: "{{ item }}"
+                state: present
+              loop: "{{ flatpak_present_packages }}"
+              register: flatpak_packages_present_individual_results
+              ignore_errors: yes
+              become: yes
 
-        - name: Remove Flatpaks
+            - name: Record specific package errors
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ flatpak_packages_present_individual_results.results }}"
+              when: item.failed
+
+        - name: Remove flatpak_packages
           block: 
-            - name: Remove Flatpaks
+            - name: Remove flatpak_packages
               when: 
                 - flatpak_absent_packages | length > 0
               community.general.flatpak:
-                name: "{{ flatpaks | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+                name: "{{ flatpak_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
                 state: absent
               become: yes # Optional: Install to user space instead of system-wide
           rescue:
-            - name: Record Flatpak Failure
+            - name: Identify specific failing packages
+              debug:
+                msg: "Bulk install failed. Testing packages individually..."
+            - name: Individual check
+              community.general.flatpak:
+                name: "{{ item }}"
+                state: absent
+              loop: "{{ flatpak_absent_packages }}"
+              register: flatpak_packages_absent_individual_results
+              ignore_errors: yes
+              become: yes
+
+            - name: Record specific package errors
               set_fact:
-                maintenance_errors: "{{ maintenance_errors + ['Flatpak: Bulk removeal failed (check logs for conflicts)'] }}"
+                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+              loop: "{{ flatpak_packages_absent_individual_results.results }}"
+              when: item.failed
 
         - name: Uninstall unused Flatpak runtimes
           command: flatpak uninstall --unused -y
@@ -473,13 +668,13 @@
         ###########################################################################
         # --- UNIVERSAL FLATPAK UPDATE ---
         ###########################################################################
-        - name: Update all installed Flatpaks
+        - name: Update all installed flatpak_packages
           command: flatpak update --noninteractive
           when: ansible_facts['system'] == "Linux"
           register: flatpak_result
           changed_when: "'Nothing to do' not in flatpak_result.stdout"
 
-        - name: Remove all Flatpaks that are no longer required
+        - name: Remove all flatpak_packages that are no longer required
           command: flatpak uninstall --unused -y
           when: ansible_facts['system'] == "Linux"
           changed_when: false
