@@ -129,6 +129,7 @@ aur_packages:
   - { name: 'github-desktop-bin', state: 'latest' }
   - { name: 'neovim-nightly-bin', state: 'latest' }
   - { name: 'google-chrome', state: 'latest' }
+debian_packages:
 flatpaks:
 ######### Flatpaks can only be 'present' or 'absent'.  'Latest' is not allowed
   - { name: 'com.bambulab.BambuStudio', state: 'absent' }

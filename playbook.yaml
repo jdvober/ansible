@@ -153,31 +153,50 @@
             aur_latest_packages: "{{ (aur_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
             aur_absent_packages: "{{ (aur_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
 
+            debian_present_packages: "{{ (debian_packages) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            debian_latest_packages: "{{ (debian_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
+            debian_absent_packages: "{{ (debian_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+
             flatpak_present_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
             flatpak_absent_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
         ###########################################################################
         # --- Sync Cross Platform Packages ---
         ###########################################################################
         - name: Install Present Cross-Platform packages
-          package:
-            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
-            state: present
-          become: yes
-          ignore_errors: true # Like nofail for fstab
+          block:
+            - name: Install Present Cross-Platform packages
+              package:
+                name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+                state: present
+              become: yes
+          rescue:
+            - name: Record Cross-Platform Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
 
         - name: Install Latest Cross-Platform packages
-          package:
-            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
-            state: latest
-          become: yes
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Install Latest Cross-Platform packages
+              package:
+                name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+                state: latest
+              become: yes
+          rescue:
+            - name: Record Cross-Platform Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
 
         - name: Remove Cross-Platform packages
-          package:
-            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
-            state: absent
-          become: yes
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Remove Cross-Platform packages
+              package:
+                name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+                state: absent
+              become: yes
+          rescue:
+            - name: Record Cross Platform Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Cross Platform: Bulk removeal failed (check logs for conflicts)'] }}"
     
         ###########################################################################
         # --- Sync Arch-only packages ---
@@ -280,6 +299,55 @@
               set_fact:
                 maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk removeal failed (check logs for conflicts)'] }}"
     
+        ###########################################################################
+        # --- Sync Debian packages ---
+        ###########################################################################
+        - name: Install Present Debian-specific packages with apt
+          block: 
+            - name: Install Present Debian-specific packages with apt
+              when: 
+                - ansible_facts['os_family'] == "Debian"
+                - debian_present_packages | length > 0
+              apt:
+                name: "{{ debian_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to apt
+                state: present
+              become: yes
+          rescue:
+            - name: Record Debian Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Debian: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+            
+
+        - name: Install Latest Debian-specific packages with apt
+          block: 
+            - name: Install Latest Debian-specific packages with apt
+              when: 
+                - ansible_facts['os_family'] == "Debian"
+                - apt_latest_packages | length > 0
+              apt:
+                name: "{{ apt_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to apt
+                state: latest
+              become: yes
+          rescue:
+            - name: Record Debian Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['apt: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
+
+        - name: Uninstall Debian-specific packages with apt
+          block: 
+            - name: Uninstall Debian-specific packages with apt
+              when: 
+                - ansible_facts['os_family'] == "Debian"
+                - apt_absent_packages | length > 0
+              apt:
+                name: "{{ apt_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+                state: absent
+              become: yes
+          rescue:
+            - name: Record Debian Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['apt: Bulk removeal failed (check logs for conflicts)'] }}"
+
         ###########################################################################
         # --- Sync Flatpaks ---
         ###########################################################################
@@ -471,8 +539,9 @@
 ###########################################################################
   post_tasks:
     - name: Final Maintenance Summary
-      debug:
-        msg: |
+      pause:
+        seconds: 1
+        prompt: |
           ==========================================
           SYSTEM MAINTENANCE REPORT
           ==========================================
