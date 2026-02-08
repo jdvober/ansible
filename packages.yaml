@@ -1,6 +1,6 @@
 # Packages that have the same name across distros (like git)
 cross_platform_packages:
-  - git
+  - { name: 'git', state: 'latest'}
 pacman_packages: 
   - { name: 'alacritty', state: 'latest'}
   - { name: 'alsa-plugins', state: 'latest'}

@@ -26,6 +26,7 @@
         - wezterm
         - yazi
         - zsh
+    maintenance_errors: []
   tasks:
     ###########################################################################
     # --- Package Installation Setup ---
@@ -138,89 +139,177 @@
     # --- Syncing Packages ---
     ###########################################################################
     
+        - name: Generating package lists
+          set_fact:
+            cross_platform_present_packages: "{{ (cross_platform_packages) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            cross_platform_latest_packages: "{{ (cross_platform_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
+            cross_platform_absent_packages: "{{ (cross_platform_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+
+            pacman_present_packages: "{{ (pacman_packages) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            pacman_latest_packages: "{{ (pacman_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
+            pacman_absent_packages: "{{ (pacman_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+
+            aur_present_packages: "{{ (aur_packages) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            aur_latest_packages: "{{ (aur_packages) | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}"
+            aur_absent_packages: "{{ (aur_packages) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+
+            flatpak_present_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}"
+            flatpak_absent_packages: "{{ (flatpaks) | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
         ###########################################################################
         # --- Sync Cross Platform Packages ---
         ###########################################################################
-        - name: Install Cross platform packages
+        - name: Install Present Cross-Platform packages
           package:
-            name: "{{ cross_platform_packages }}"
+            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+            state: present
+          become: yes
+          ignore_errors: true # Like nofail for fstab
+
+        - name: Install Latest Cross-Platform packages
+          package:
+            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
             state: latest
+          become: yes
+          ignore_errors: true # Like nofail for fstab
+
+        - name: Remove Cross-Platform packages
+          package:
+            name: "{{ cross_platform_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+            state: absent
           become: yes
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
         # --- Sync Arch-only packages ---
         ###########################################################################
-        - name: Install Arch-specific packages with Pacman (non-AUR)
-          when: ansible_facts['os_family'] == "Archlinux"
-          pacman:
-            name: "{{ pacman_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
-            state: latest
-          become: yes
-          ignore_errors: true # Like nofail for fstab
+        - name: Install Present Arch-specific packages with Pacman (non-AUR)
+          block: 
+            - name: Install Present Arch-specific packages with Pacman (non-AUR)
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - pacman_present_packages | length > 0
+              pacman:
+                name: "{{ pacman_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+                state: present
+              become: yes
+          rescue:
+            - name: Record Arch Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+            
+
+        - name: Install Latest Arch-specific packages with Pacman (non-AUR)
+          block: 
+            - name: Install Latest Arch-specific packages with Pacman (non-AUR)
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - pacman_latest_packages | length > 0
+              pacman:
+                name: "{{ pacman_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to pacman
+                state: latest
+              become: yes
+          rescue:
+            - name: Record Arch Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
 
         - name: Uninstall Arch-specific packages with Pacman (non-AUR)
-          when: ansible_facts['os_family'] == "Archlinux"
-          pacman:
-            name: "{{ pacman_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
-            state: absent
-          become: yes
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Uninstall Arch-specific packages with Pacman (non-AUR)
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - pacman_absent_packages | length > 0
+              pacman:
+                name: "{{ pacman_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+                state: absent
+              become: yes
+          rescue:
+            - name: Record Arch Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Pacman: Bulk removeal failed (check logs for conflicts)'] }}"
 
         ###########################################################################
         # --- Sync AUR packages ---
         ###########################################################################
 
-        - name: Install AUR Packages
-          when: ansible_facts['os_family'] == "Archlinux"
-          kewlfft.aur.aur:
-            name: "{{ aur_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
-            state: latest
-          become: yes
-          become_user: aur_builder
-          ignore_errors: true # Like nofail for fstab
+        - name: Install Present AUR Packages
+          block: 
+            - name: Install Present AUR Packages
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - aur_present_packages | length > 0
+              kewlfft.aur.aur:
+                name: "{{ aur_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
+                state: present
+              become: yes
+              become_user: aur_builder
+          rescue:
+            - name: Record AUR Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk update of packages marked as present failed (check logs for conflicts)'] }}"
+
+        - name: Install Latest AUR Packages
+          block: 
+            - name: Install Latest AUR Packages
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - aur_latest_packages | length > 0
+              kewlfft.aur.aur:
+                name: "{{ aur_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
+                state: latest
+              become: yes
+              become_user: aur_builder
+          rescue:
+            - name: Record AUR Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk update of packages marked as latest failed (check logs for conflicts)'] }}"
 
         - name: Uninstall AUR Packages
-          when: ansible_facts['os_family'] == "Archlinux"
-          pacman:
-            name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
-            state: absent
-          become: yes
-          become_user: aur_builder
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Uninstall AUR Packages
+              when: 
+                - ansible_facts['os_family'] == "Archlinux"
+                - aur_absent_packages | length > 0
+              kewlfft.aur.aur:
+                name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+                state: absent
+              become: yes
+              become_user: aur_builder
+          rescue:
+            - name: Record AUR Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['AUR: Bulk removeal failed (check logs for conflicts)'] }}"
     
         ###########################################################################
-        # --- Sync Debian-only packages ---
-        ###########################################################################
-          # Removes any packages marked for deletion in packages.yaml
-        - name: Install and Remove Debian-specific packages with apt
-          when: ansible_facts['os_family'] == "Debian"
-          apt:
-            name: "{{ item.name}}"
-            state: "{{ item.state }}"
-          loop: "{{ debian_packages }}"
-          become: yes
-          ignore_errors: true # Like nofail for fstab
-
-    
-        ###########################################################################
-        # --- Sync Flatpaks -only packages ---
+        # --- Sync Flatpaks ---
         ###########################################################################
         - name: Install Flatpaks
-          when: ansible_facts['os_family'] == "Archlinux"
-          community.general.flatpak:
-            name: "{{ flatpaks | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
-            state: present
-          become: yes # Optional: Install to user space instead of system-wide
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Install Flatpaks
+              when: 
+                - flatpak_present_packages | length > 0
+              community.general.flatpak:
+                name: "{{ flatpaks | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+                state: present
+              become: yes # Optional: Install to user space instead of system-wide
+          rescue:
+            - name: Record Flatpak Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Flatpak: Bulk update of flatpaks failed (check logs for conflicts)'] }}"
 
         - name: Remove Flatpaks
-          when: ansible_facts['os_family'] == "Archlinux"
-          community.general.flatpak:
-            name: "{{ flatpaks | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
-            state: absent
-          become: yes # Optional: Install to user space instead of system-wide
-          ignore_errors: true # Like nofail for fstab
+          block: 
+            - name: Remove Flatpaks
+              when: 
+                - flatpak_absent_packages | length > 0
+              community.general.flatpak:
+                name: "{{ flatpaks | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to flatpak
+                state: absent
+              become: yes # Optional: Install to user space instead of system-wide
+          rescue:
+            - name: Record Flatpak Failure
+              set_fact:
+                maintenance_errors: "{{ maintenance_errors + ['Flatpak: Bulk removeal failed (check logs for conflicts)'] }}"
 
         - name: Uninstall unused Flatpak runtimes
           command: flatpak uninstall --unused -y
@@ -377,3 +466,24 @@
               changed_when: "'Nothing to do' not in fp_cleanup.stdout"
               when: ansible_facts['system'] == "Linux"
           
+###########################################################################
+# Summary
+###########################################################################
+  post_tasks:
+    - name: Final Maintenance Summary
+      debug:
+        msg: |
+          ==========================================
+          SYSTEM MAINTENANCE REPORT
+          ==========================================
+          {% if maintenance_errors | length == 0 %}
+          STATUS: SUCCESS
+          All packages updated perfectly on {{ ansible_facts['hostname'] }}.
+          {% else %}
+          STATUS: COMPLETED WITH ISSUES
+          The following issues were detected:
+          {% for error in maintenance_errors %}
+          - {{ error }}
+          {% endfor %}
+          {% endif %}
+          ==========================================
