@@ -67,6 +67,7 @@ pacman_packages:
   - { name: 'pipewire', state: 'latest'}
   - { name: 'pipewire-alsa', state: 'latest'}
   - { name: 'pipewire-pulse', state: 'latest'}
+  - { name: 'plasma', state: 'latest'}
   - { name: 'python', state: 'latest'}
   - { name: 'python-pip', state: 'latest'}
   - { name: 'python-pipx', state: 'latest'}
