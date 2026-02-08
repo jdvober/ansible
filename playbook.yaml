@@ -6,7 +6,9 @@
   vars_files:
     - packages.yaml
   vars:
+    ###########################################################################
     # Playbook-wide variables
+    ###########################################################################
     username: jdv
     dotfiles_repo: "https://github.com/jdvober/dotfiles.git"
     dotfiles_path: /home/{{ username}}/github.com/jdvober/dotfiles/
@@ -90,7 +92,9 @@
             enabled: yes
             state: started
     
+      ###########################################################################
       # --- SNAPPER CLEANUP & RETENTION ---
+      ###########################################################################
         - name: Configure Snapper retention policy for root
           lineinfile:
             path: /etc/snapper/configs/root
@@ -116,7 +120,7 @@
             - snapper-timeline.timer
     
         ###########################################################################
-        # Install Cross Platform Packages
+        # --- Install Cross Platform Packages ---
         ###########################################################################
         - name: Install Cross platform packages
           package:
@@ -126,7 +130,7 @@
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
-        # Install / Remove Arch-only packages
+        # --- Install / Remove Arch-only packages ---
         ###########################################################################
         - name: Install Arch-specific packages with Pacman (non-AUR)
           when: ansible_facts['os_family'] == "Archlinux"
@@ -145,7 +149,7 @@
           ignore_errors: true # Like nofail for fstab
 
         ###########################################################################
-        # Install AUR packages
+        # --- Install AUR packages ---
         ###########################################################################
 
         - name: Install AUR Packages
@@ -167,7 +171,7 @@
           ignore_errors: true # Like nofail for fstab
     
         ###########################################################################
-        # Install Debian-only packages
+        # --- Install Debian-only packages ---
         ###########################################################################
           # Removes any packages marked for deletion in packages.yaml
         - name: Install and Remove Debian-specific packages with apt
@@ -270,7 +274,9 @@
   ###########################################################################
   #  Updating and Upgrading
   ###########################################################################
+        ###########################################################################
         # --- ARCH LINUX UPDATES ---
+        ###########################################################################
         - name: Update Arch system packages (pacman)
           community.general.pacman:
             update_cache: yes
@@ -282,7 +288,9 @@
           command: yay
           when: ansible_facts['os_family'] == "Archlinux"
 
+        ###########################################################################
         # --- DEBIAN SERVER UPDATES ---
+        ###########################################################################
         - name: Update Debian system packages (apt)
           apt:
             update_cache: yes
@@ -290,7 +298,9 @@
           become: yes
           when: ansible_facts['os_family'] == "Debian"
 
+        ###########################################################################
         # --- UNIVERSAL FLATPAK UPDATE ---
+        ###########################################################################
         - name: Update all installed Flatpaks
           command: flatpak update --noninteractive
           when: ansible_facts['system'] == "Linux"
@@ -302,7 +312,9 @@
           when: ansible_facts['system'] == "Linux"
           changed_when: false
 
+        ###########################################################################
         # --- WINDOWS 11 WORK UPDATES ---
+        ###########################################################################
         - name: Install all Windows updates
           ansible.windows.win_updates:
             category_names: '*'
@@ -313,8 +325,11 @@
         #  Cleanup
         ###########################################################################
         - name: System Cleanup and Maintenance
+          ignore_errors: true # Continue even if a cleanup task fails
           block:
+            ###########################################################################
             # ARCH CLEANUP
+            ###########################################################################
             - name: Remove orphaned packages (Arch)
               command: pacman -Rs $(pacman -Qdtq)
               register: orphan_out
@@ -328,7 +343,9 @@
               become: yes
               when: ansible_facts['distribution'] == "Archlinux"
 
+            ###########################################################################
             # DEBIAN CLEANUP
+            ###########################################################################
             - name: Remove unused dependencies (Debian)
               apt:
                 autoremove: yes
@@ -336,11 +353,12 @@
               become: yes
               when: ansible_facts['os_family'] == "Debian"
 
+            ###########################################################################
             # UNIVERSAL FLATPAK CLEANUP
+            ###########################################################################
             - name: Uninstall unused Flatpak runtimes
               command: flatpak uninstall --unused -y
               register: fp_cleanup
               changed_when: "'Nothing to do' not in fp_cleanup.stdout"
               when: ansible_facts['system'] == "Linux"
           
-          ignore_errors: true # Continue even if a cleanup task fails
