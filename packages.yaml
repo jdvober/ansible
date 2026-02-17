@@ -7,7 +7,7 @@ pacman_packages:
   - { name: 'alsa-utils', state: 'latest'}
   - { name: 'asciidoc', state: 'latest'}
   - { name: 'audacity', state: 'latest'}
-  - { name: 'bambustudio-bin', state: 'absent'}
+  - { name: 'bambustudio-bin', state: 'latest'}
   - { name: 'bash-language-server', state: 'latest'}
   - { name: 'bat', state: 'latest'}
   - { name: 'bitwarden', state: 'latest'}
@@ -68,6 +68,8 @@ pacman_packages:
   - { name: 'pipewire-alsa', state: 'latest'}
   - { name: 'pipewire-pulse', state: 'latest'}
   - { name: 'plasma', state: 'latest'}
+  - { name: 'plasma-x11-session', state: 'latest'}
+  - { name: 'proton-vpn-gtk-app', state: 'latest'}
   - { name: 'python', state: 'latest'}
   - { name: 'python-pip', state: 'latest'}
   - { name: 'python-pipx', state: 'latest'}
