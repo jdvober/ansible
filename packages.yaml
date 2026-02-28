@@ -15,10 +15,13 @@ pacman_packages:
   - { name: 'calf', state: 'latest'}
   - { name: 'cifs-utils', state: 'latest'}
   - { name: 'cowsay', state: 'latest'}
+  - { name: 'deluge', state: 'latest'}
   - { name: 'discord', state: 'absent'}
   - { name: 'distrobox', state: 'latest'}
   - { name: 'dust', state: 'latest'}
+  - { name: 'dua-cli', state: 'latest'}
   - { name: 'easyeffects', state: 'latest'}
+  - { name: 'eyedropper', state: 'latest'}
   - { name: 'evince', state: 'latest'}
   - { name: 'eza', state: 'latest'}
   - { name: 'fastfetch', state: 'latest'}
@@ -74,6 +77,7 @@ pacman_packages:
   - { name: 'python-pip', state: 'latest'}
   - { name: 'python-pipx', state: 'latest'}
   - { name: 'python-pynvim', state: 'latest'}
+  - { name: 'qbittorrent', state: 'latest'}
   - { name: 'qtile', state: 'latest'}
   - { name: 'rclone', state: 'latest'}
   - { name: 'rdfind', state: 'latest'}
@@ -90,6 +94,7 @@ pacman_packages:
   - { name: 'steam', state: 'latest'}
   - { name: 'switcheroo-control', state: 'latest'}
   - { name: 'tar', state: 'latest'}
+  - { name: 'telegram-desktop', state: 'latest'}
   - { name: 'thunar', state: 'latest'}
   - { name: 'thunar-archive-plugin', state: 'latest'}
   - { name: 'thunar-media-tags-plugin', state: 'latest'}
@@ -140,3 +145,4 @@ flatpak_packages:
   - { name: 'com.discordapp.Discord', state: 'absent' }
   - { name: 'com.github.tchx84.Flatseal', state: 'present' }
   - { name: 'com.mastermindzh.tidal-hifi', state: 'absent' }
+  - { name: 'io.github.nokse22.high-tide', state: 'present' }
