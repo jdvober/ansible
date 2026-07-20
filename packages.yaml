@@ -3,18 +3,21 @@ cross_platform_packages:
   - { name: 'git', state: 'latest'}
 pacman_packages: 
   - { name: 'alacritty', state: 'latest'}
+  - { name: 'chromium', state: 'latest'}
+  - { name: 'neovim', state: 'latest'}
   - { name: 'alsa-plugins', state: 'latest'}
   - { name: 'alsa-utils', state: 'latest'}
   - { name: 'asciidoc', state: 'latest'}
   - { name: 'audacity', state: 'latest'}
-  - { name: 'bambustudio-bin', state: 'latest'}
   - { name: 'bash-language-server', state: 'latest'}
   - { name: 'bat', state: 'latest'}
   - { name: 'bitwarden', state: 'latest'}
+  - { name: 'blender', state: 'latest'}
   - { name: 'btop', state: 'latest'}
   - { name: 'calf', state: 'latest'}
   - { name: 'cifs-utils', state: 'latest'}
   - { name: 'cowsay', state: 'latest'}
+  - { name: 'code', state: 'latest'}
   - { name: 'deluge', state: 'latest'}
   - { name: 'discord', state: 'absent'}
   - { name: 'distrobox', state: 'latest'}
@@ -48,6 +51,7 @@ pacman_packages:
   - { name: 'jq', state: 'latest'}
   - { name: 'keychain', state: 'latest'}
   - { name: 'libreoffice', state: 'latest'}
+  - { name: 'localsend', state: 'latest'}
   - { name: 'lolcat', state: 'latest'}
   - { name: 'lsp-plugins-lv2', state: 'latest'}
   - { name: 'lxappearance', state: 'latest'}
@@ -73,6 +77,7 @@ pacman_packages:
   - { name: 'plasma', state: 'latest'}
   - { name: 'plasma-x11-session', state: 'latest'}
   - { name: 'proton-vpn-gtk-app', state: 'latest'}
+  - { name: 'protonup-qt', state: 'latest'}
   - { name: 'python', state: 'latest'}
   - { name: 'python-pip', state: 'latest'}
   - { name: 'python-pipx', state: 'latest'}
@@ -107,6 +112,7 @@ pacman_packages:
   - { name: 'typescript-language-server', state: 'latest'}
   - { name: 'unrar', state: 'latest'}
   - { name: 'usbutils', state: 'latest'}
+  - { name: 'moonlight-qt', state: 'latest'}
   - { name: 'uv', state: 'latest'}
   - { name: 'vi', state: 'latest'}
   - { name: 'vlc', state: 'latest'}
@@ -128,21 +134,25 @@ pacman_packages:
   - { name: 'zathura-pdf-mupdf', state: 'latest'}
   - { name: 'zoxide', state: 'latest'}
 aur_packages:
-  - { name: 'discord_arch_electron', state: 'latest' }
-  - { name: 'f1multiviewer-bin', state: 'latest' }
-  - { name: 'f1mv-lights-integration-bin', state: 'latest'}
-  - { name: 'feishin-bin', state: 'latest' }
-  - { name: 'github-desktop-bin', state: 'latest' }
-  - { name: 'google-chrome', state: 'latest' }
-  - { name: 'neovim-nightly-bin', state: 'latest' }
-  - { name: 'tidal-hifi-bin', state: 'latest' }
-  - { name: 'visual-studio-code-bin', state: 'latest' }
-  - { name: 'yay-bin', state: 'latest' }
+  - { name: 'f1multiviewer-bin', state: 'absent' }
+  - { name: 'f1mv-lights-integration-bin', state: 'absent'}
+  - { name: 'feishin-bin', state: 'absent' }
+  - { name: 'github-desktop-bin', state: 'absent' }
+  - { name: 'google-chrome', state: 'absent' }
+  - { name: 'neovim-nightly-bin', state: 'absent' }
+  - { name: 'tidal-hifi-bin', state: 'absent' }
+  - { name: 'visual-studio-code-bin', state: 'absent' }
+  - { name: 'x2goserver', state: 'absent' }
+  - { name: 'x2goclient', state: 'absent' }
+  - { name: 'yay-bin', state: 'absent' }
 debian_packages:
 flatpak_packages:
 ######### Flatpaks can only be 'present' or 'absent'.  'Latest' is not allowed
-  - { name: 'com.bambulab.BambuStudio', state: 'absent' }
+  - { name: 'com.bambulab.BambuStudio', state: 'present' }
   - { name: 'com.discordapp.Discord', state: 'absent' }
   - { name: 'com.github.tchx84.Flatseal', state: 'present' }
-  - { name: 'com.mastermindzh.tidal-hifi', state: 'absent' }
+  - { name: 'com.mastermindzh.tidal-hifi', state: 'present' }
   - { name: 'io.github.nokse22.high-tide', state: 'present' }
+  - { name: 'io.github.ungoogled_software.ungoogled_chromium', state: 'present' }
+  - { name: 'dev.lizardbyte.app.Sunshine', state: 'present' }
+

@@ -335,98 +335,98 @@
         # --- Sync AUR packages ---
         ###########################################################################
 
-        - name: Install Present AUR Packages
-          block: 
-            - name: Install Present AUR Packages
-              when: 
-                - ansible_facts['os_family'] == "Archlinux"
-                - aur_present_packages | length > 0
-              kewlfft.aur.aur:
-                name: "{{ aur_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
-                state: present
-              become: yes
-              become_user: aur_builder
-          rescue:
-            - name: Identify specific failing packages
-              debug:
-                msg: "Bulk install failed. Testing packages individually..."
-            - name: Individual check
-              kewlfft.aur.aur:
-                name: "{{ item }}"
-                state: present
-              loop: "{{ aur_present_packages }}"
-              register: aur_present_individual_results
-              ignore_errors: yes
-              become: yes
-              become_user: aur_builder
+       # - name: Install Present AUR Packages
+       #   block: 
+       #     - name: Install Present AUR Packages
+       #       when: 
+       #         - ansible_facts['os_family'] == "Archlinux"
+       #         - aur_present_packages | length > 0
+       #       kewlfft.aur.aur:
+       #         name: "{{ aur_packages | selectattr('state', 'equalto', 'present') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
+       #         state: present
+       #       become: yes
+       #       become_user: aur_builder
+       #   rescue:
+       #     - name: Identify specific failing packages
+       #       debug:
+       #         msg: "Bulk install failed. Testing packages individually..."
+       #     - name: Individual check
+       #       kewlfft.aur.aur:
+       #         name: "{{ item }}"
+       #         state: present
+       #       loop: "{{ aur_present_packages }}"
+       #       register: aur_present_individual_results
+       #       ignore_errors: yes
+       #       become: yes
+       #       become_user: aur_builder
 
-            - name: Record specific package errors
-              set_fact:
-                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
-              loop: "{{ aur_present_individual_results.results }}"
-              when: item.failed
+       #     - name: Record specific package errors
+       #       set_fact:
+       #         maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+       #       loop: "{{ aur_present_individual_results.results }}"
+       #       when: item.failed
 
-        - name: Install Latest AUR Packages
-          block: 
-            - name: Install Latest AUR Packages
-              when: 
-                - ansible_facts['os_family'] == "Archlinux"
-                - aur_latest_packages | length > 0
-              kewlfft.aur.aur:
-                name: "{{ aur_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
-                state: latest
-              become: yes
-              become_user: aur_builder
-          rescue:
-            - name: Identify specific failing packages
-              debug:
-                msg: "Bulk install failed. Testing packages individually..."
-            - name: Individual check
-              kewlfft.aur.aur:
-                name: "{{ item }}"
-                state: latest
-              loop: "{{ aur_latest_packages }}"
-              register: aur_latest_individual_results
-              ignore_errors: yes
-              become: yes
-              become_user: aur_builder
+       # - name: Install Latest AUR Packages
+       #   block: 
+       #     - name: Install Latest AUR Packages
+       #       when: 
+       #         - ansible_facts['os_family'] == "Archlinux"
+       #         - aur_latest_packages | length > 0
+       #       kewlfft.aur.aur:
+       #         name: "{{ aur_packages | selectattr('state', 'equalto', 'latest') | map(attribute='name') | list }}" # Extract the 'name' of each package that should be installed to pass to yay
+       #         state: latest
+       #       become: yes
+       #       become_user: aur_builder
+       #   rescue:
+       #     - name: Identify specific failing packages
+       #       debug:
+       #         msg: "Bulk install failed. Testing packages individually..."
+       #     - name: Individual check
+       #       kewlfft.aur.aur:
+       #         name: "{{ item }}"
+       #         state: latest
+       #       loop: "{{ aur_latest_packages }}"
+       #       register: aur_latest_individual_results
+       #       ignore_errors: yes
+       #       become: yes
+       #       become_user: aur_builder
 
-            - name: Record specific package errors
-              set_fact:
-                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
-              loop: "{{ aur_latest_individual_results.results }}"
-              when: item.failed
+       #     - name: Record specific package errors
+       #       set_fact:
+       #         maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+       #       loop: "{{ aur_latest_individual_results.results }}"
+       #       when: item.failed
 
-        - name: Uninstall AUR Packages
-          block: 
-            - name: Uninstall AUR Packages
-              when: 
-                - ansible_facts['os_family'] == "Archlinux"
-                - aur_absent_packages | length > 0
-              kewlfft.aur.aur:
-                name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
-                state: absent
-              become: yes
-              become_user: aur_builder
-          rescue:
-            - name: Identify specific failing packages
-              debug:
-                msg: "Bulk install failed. Testing packages individually..."
-            - name: Individual check
-              kewlfft.aur.aur:
-                name: "{{ item }}"
-                state: absent
-              loop: "{{ aur_absent_packages }}"
-              register: aur_absent_individual_results
-              ignore_errors: yes
-              become: yes
-              become_user: aur_builder
+       # - name: Uninstall AUR Packages
+       #   block: 
+       #     - name: Uninstall AUR Packages
+       #       when: 
+       #         - ansible_facts['os_family'] == "Archlinux"
+       #         - aur_absent_packages | length > 0
+       #       kewlfft.aur.aur:
+       #         name: "{{ aur_packages | selectattr('state', 'equalto', 'absent') | map(attribute='name') | list }}"
+       #         state: absent
+       #       become: yes
+       #       become_user: aur_builder
+       #   rescue:
+       #     - name: Identify specific failing packages
+       #       debug:
+       #         msg: "Bulk install failed. Testing packages individually..."
+       #     - name: Individual check
+       #       kewlfft.aur.aur:
+       #         name: "{{ item }}"
+       #         state: absent
+       #       loop: "{{ aur_absent_packages }}"
+       #       register: aur_absent_individual_results
+       #       ignore_errors: yes
+       #       become: yes
+       #       become_user: aur_builder
 
-            - name: Record specific package errors
-              set_fact:
-                maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
-              loop: "{{ aur_absent_individual_results.results }}"
-              when: item.failed
+       #     - name: Record specific package errors
+       #       set_fact:
+       #         maintenance_errors: "{{ maintenance_errors + [ 'Failed: ' + item.item ] }}"
+       #       loop: "{{ aur_absent_individual_results.results }}"
+       #       when: item.failed
     
         ###########################################################################
         # --- Sync Debian packages ---
@@ -652,9 +652,9 @@
           become: yes
           when: ansible_facts['os_family'] == "Archlinux"
 
-        - name: Update AUR packages (using yay)
-          command: yay
-          when: ansible_facts['os_family'] == "Archlinux"
+      # - name: Update AUR packages (using yay)
+          #   command: yay
+          #   when: ansible_facts['os_family'] == "Archlinux"
 
         ###########################################################################
         # --- DEBIAN SERVER UPDATES ---
