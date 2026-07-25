@@ -150,7 +150,7 @@ debian_packages:
 flatpak_packages:
 ######### Flatpaks can only be 'present' or 'absent'.  'Latest' is not allowed
   - { name: 'com.bambulab.BambuStudio', state: 'present' }
-  - { name: 'com.discordapp.Discord', state: 'absent' }
+  - { name: 'com.discordapp.Discord', state: 'present' }
   - { name: 'com.github.tchx84.Flatseal', state: 'present' }
   - { name: 'com.mastermindzh.tidal-hifi', state: 'present' }
   - { name: 'io.github.nokse22.high-tide', state: 'present' }
