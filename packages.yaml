@@ -105,6 +105,7 @@ pacman_packages:
   - { name: 'thunar-media-tags-plugin', state: 'latest'}
   - { name: 'thunar-volman', state: 'latest'}
   - { name: 'tidal-hifi-bin', state: 'absent'}
+  - { name: 'timeshift', state: 'latest'}
   - { name: 'tmux', state: 'latest'}
   - { name: 'tree-sitter-cli', state: 'latest'}
   - { name: 'ttf-fira-code', state: 'latest'}
